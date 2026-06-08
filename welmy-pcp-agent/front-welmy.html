@@ -123,7 +123,9 @@
         position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.86); backdrop-filter: blur(8px);
         border-bottom: 1px solid var(--line); padding: 12px 26px; display: flex; align-items: center; gap: 14px;
       }
-      .topbar h2 { font-size: 17px; margin: 0; }
+      .topbar h2 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 9px; }
+      .topbar h2 .vt-ico { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 9px; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; }
+      .topbar h2 .vt-ico svg { width: 17px; height: 17px; }
       .topbar .who { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; }
       .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; font-weight: 700; }
       .content { padding: 22px 26px; }
@@ -142,13 +144,25 @@
 
       /* ===== Cards / KPIs ===== */
       .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
-      .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px; box-shadow: var(--shadow); }
+      .kpi { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px 15px 18px; box-shadow: var(--shadow); overflow: hidden; }
+      .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--pri2); opacity: .55; }
       .kpi .v { font-size: 26px; font-weight: 800; }
       .kpi .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
       .kpi.alto .v { color: var(--no); }
+      .kpi.alto::before { background: var(--no); }
       .kpi.medio .v { color: var(--warn); }
+      .kpi.medio::before { background: var(--warn); }
       .kpi.baixo .v { color: var(--ok); }
+      .kpi.baixo::before { background: var(--ok); }
       .kpi.info .v { color: var(--pri2); }
+      .kpi.info::before { background: var(--pri2); }
+
+      /* ===== Banner de introdução (ajuda por página) ===== */
+      .page-intro { display: flex; gap: 12px; align-items: flex-start; background: linear-gradient(180deg, #fbfcff, #f5f8fe); border: 1px solid var(--line); border-left: 3px solid var(--pri); border-radius: 12px; padding: 12px 15px; margin-bottom: 18px; }
+      .page-intro .pi-ico { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 10px; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; }
+      .page-intro .pi-ico svg { width: 19px; height: 19px; }
+      .page-intro .pi-txt { font-size: 13px; line-height: 1.5; color: #3a4658; padding-top: 1px; }
+      .page-intro .pi-txt b { color: var(--txt); }
 
       .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
       .card .head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
@@ -172,6 +186,7 @@
 
       /* ===== Badges ===== */
       .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+      .badge .bdot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
       .b-alto { background: var(--nobg); color: var(--no); }
       .b-medio { background: var(--warnbg); color: var(--warn); }
       .b-baixo { background: var(--okbg); color: var(--ok); }
@@ -209,6 +224,9 @@
       .cov-legend .dot.buy { background: var(--no); }
 
       .empty { padding: 40px; text-align: center; color: var(--muted); }
+      .empty .es-ico { width: 46px; height: 46px; margin: 0 auto 12px; border-radius: 12px; background: var(--chip); color: var(--muted); display: flex; align-items: center; justify-content: center; }
+      .empty .es-ico svg { width: 24px; height: 24px; }
+      .empty .es-title { font-weight: 700; color: var(--txt); font-size: 14px; margin-bottom: 3px; }
       .spinner { width: 18px; height: 18px; border: 2px solid var(--pri-soft); border-top-color: var(--pri); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
       @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -494,7 +512,16 @@
       function riskBadge(r) {
         const map = { alto: ["b-alto", "Alto"], medio: ["b-medio", "Médio"], baixo: ["b-baixo", "Baixo"], dado_incompleto: ["b-incompleto", "Dado incompleto"] };
         const [c, l] = map[r] || ["b-incompleto", r || "—"];
-        return `<span class="badge ${c}">${l}</span>`;
+        return `<span class="badge ${c}"><span class="bdot"></span>${l}</span>`;
+      }
+
+      // Banner de ajuda no topo de cada página: ícone + explicação curta do que é a tela.
+      function pageIntro(icon, html) {
+        return `<div class="page-intro"><div class="pi-ico"><i data-lucide="${icon}"></i></div><div class="pi-txt">${html}</div></div>`;
+      }
+      // Estado vazio amigável (ícone + título + dica) para usar dentro de células de tabela ou áreas.
+      function emptyState(icon, title, hint) {
+        return `<div class="es-ico"><i data-lucide="${icon}"></i></div><div class="es-title">${esc(title)}</div>${hint ? `<div>${esc(hint)}</div>` : ""}`;
       }
 
       /* ============ AUTH ============ */
@@ -538,15 +565,21 @@
         itens: "Itens / Componentes", documentos: "Documentos (RAG)",
         planos: "Relatórios processados", usuarios: "Usuários",
       };
+      const VIEW_ICONS = {
+        necessidades: "list-checks", estoque: "boxes", mrp: "git-branch-plus", leadtime: "timer",
+        dados: "upload-cloud", itens: "package", documentos: "file-text", planos: "history", usuarios: "users",
+      };
       function navTo(view) {
         if (view === "usuarios" && !isAdmin) view = "necessidades";
         currentView = view;
         document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.view === view));
-        $("#viewTitle").textContent = VIEW_TITLES[view] || view;
+        $("#viewTitle").innerHTML = `<span class="vt-ico"><i data-lucide="${VIEW_ICONS[view] || "circle"}"></i></span>${esc(VIEW_TITLES[view] || view)}`;
         $("#chatCtx").textContent = VIEW_TITLES[view] || "Suprimentos & PCP";
         const render = { necessidades: viewNecessidades, estoque: viewEstoque, mrp: viewMrp, leadtime: viewLeadtime, dados: viewDados, itens: viewItens, documentos: viewDocumentos, planos: viewPlanos, usuarios: viewUsuarios }[view];
         $("#content").innerHTML = `<div class="empty"><span class="spinner"></span> Carregando…</div>`;
-        Promise.resolve().then(render).catch((e) => { $("#content").innerHTML = `<div class="empty">Erro: ${esc(e.message)}</div>`; });
+        Promise.resolve().then(render)
+          .then(() => { if (window.lucide) lucide.createIcons(); })
+          .catch((e) => { $("#content").innerHTML = `<div class="empty">Erro: ${esc(e.message)}</div>`; });
       }
       document.querySelectorAll("#nav a").forEach((a) => a.addEventListener("click", () => { navTo(a.dataset.view); setSidebar(false); }));
 
@@ -566,7 +599,7 @@
         const c = $("#content");
         const comp = new Date().toISOString().slice(0, 7);
         c.innerHTML = `
-          <p class="muted" style="margin:0 0 16px">Aqui você só precisa soltar os <strong>PDFs dos relatórios do ERP</strong> (Registro de Inventário e Relatório de Necessidades). O sistema reconhece cada tipo sozinho, atualiza o estoque e gera o plano. Os dados de SKU, curva, consumo, lead time e fornecedor vêm direto da <strong>planilha conectada</strong> — sincronizados automaticamente antes de processar e também pelo botão abaixo.</p>
+          ${pageIntro("upload-cloud", "Ponto único de atualização: solte os <b>PDFs do ERP</b> (Registro de Inventário e Relatório de Necessidades) que o sistema reconhece cada tipo sozinho — o inventário atualiza o estoque e as necessidades geram o plano/MRP. SKU, curva, consumo, lead time e fornecedor vêm da <b>planilha conectada</b>, sincronizada automaticamente antes de processar.")}
           <div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;margin:0 0 16px">
             <div class="dz-ico" style="flex:none"><i data-lucide="table-2"></i></div>
             <div style="flex:1;min-width:220px">
@@ -735,6 +768,7 @@
         curPlano = curPlano || stats.plano_id || (planos[0] && planos[0].id) || null;
         const c = $("#content");
         c.innerHTML = `
+          ${pageIntro("list-checks", "Lista priorizada do que <b>precisa de decisão</b> para atender os pedidos. O risco é calculado automaticamente (estoque, pedidos em aberto, lead time e data-limite do dia 25). Clique em <b>Ver</b> para registrar a decisão de cada item.")}
           <div class="kpis">
             <div class="kpi alto"><div class="v">${stats.risco_alto}</div><div class="l">Risco alto</div></div>
             <div class="kpi medio"><div class="v">${stats.risco_medio}</div><div class="l">Risco médio</div></div>
@@ -776,7 +810,7 @@
           p_limit: PAGE_SIZE, p_offset: necPage * PAGE_SIZE,
         });
         const tb = $("#necTable").querySelector("tbody");
-        if (!rows || !rows.length) { tb.innerHTML = `<tr><td colspan="11" class="empty">Nenhuma necessidade encontrada.</td></tr>`; $("#necCount").textContent = ""; return; }
+        if (!rows || !rows.length) { tb.innerHTML = `<tr><td colspan="11" class="empty">${emptyState("list-checks", "Nenhuma necessidade encontrada", "Ajuste os filtros ou processe um Relatório de Necessidades em “Atualizar dados”.")}</td></tr>`; $("#necCount").textContent = ""; if (window.lucide) lucide.createIcons(); return; }
         const total = rows[0].total_count;
         tb.innerHTML = rows.map((r) => {
           const rupt = r.dias_ate_ruptura == null ? "—" : (r.dias_ate_ruptura <= (r.lead_time_dias || 0) ? `<span class="danger-cell">${fmtNum(r.dias_ate_ruptura, 1)}d</span>` : fmtNum(r.dias_ate_ruptura, 1) + "d");
@@ -875,6 +909,7 @@
       async function viewEstoque() {
         const c = $("#content");
         c.innerHTML = `
+          ${pageIntro("boxes", "Saúde do estoque por item. O <b>mínimo</b> é calculado (consumo × lead time) e a <b>ruptura</b> mostra em quantos dias o estoque acaba. Use o filtro <b>“precisam cobrir o mínimo”</b> para ver só o que está em risco de faltar.")}
           <div id="eKpis" class="kpis"></div>
           <div class="toolbar">
             <select id="eGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
@@ -933,6 +968,7 @@
             <input id="mBusca" class="grow" placeholder="Buscar SKU, código ou descrição…" />
             <span class="muted">Árvore por SKU: tempo total (caminho crítico) · tempo de cada item · o que já está OK.</span>
           </div>
+          ${pageIntro("git-branch-plus", "Árvore do plano agrupada por SKU. Mostra <b>quanto tempo falta no total</b> (caminho crítico = item pendente mais demorado), <b>o tempo de cada item</b> e <b>o que já está OK</b>. A barra abaixo resume quanto já está em estoque, em compra e o que ainda falta.")}
           <div id="mKpis" class="kpis"></div>
           <div id="mInsight" class="cov-card"></div>
           <div id="mTree"><div class="empty"><span class="spinner"></span> Carregando…</div></div>`;
@@ -1012,7 +1048,8 @@
         if (onlyPending) skus = skus.filter((s) => s.itens_pendentes > 0);
 
         if (!skus.length) {
-          tree.innerHTML = `<div class="empty">${onlyPending ? "Tudo certo — nenhum item pendente neste plano." : "Sem itens neste relatório."}</div>`;
+          tree.innerHTML = `<div class="empty">${onlyPending ? emptyState("check-circle-2", "Tudo certo!", "Nenhum item pendente neste plano.") : emptyState("git-branch-plus", "Sem itens neste relatório", "Processe um Relatório de Necessidades para montar a árvore.")}</div>`;
+          if (window.lucide) lucide.createIcons();
           return;
         }
 
@@ -1023,7 +1060,7 @@
           // Título do grupo: SKU (com descrição) quando há vínculo; senão agrupa por grupo do item.
           const titulo = s.por_sku
             ? `<strong>${esc(s.sku)}</strong>${s.sku_descricao ? ` <span class="muted">· ${esc(s.sku_descricao)}</span>` : ""}`
-            : `<strong>${esc(GRUPOS[s.grupo] || s.grupo || "Diversos")}</strong> <span class="muted">· sem vínculo de SKU</span>`;
+            : `<strong>${esc(GRUPOS[s.grupo] || s.grupo || "Diversos")}</strong>`;
           const statusBadge = s.pronto
             ? '<span class="badge b-baixo">Pronto</span>'
             : `<span class="badge b-alto">${s.itens_pendentes} pendente${s.itens_pendentes > 1 ? "s" : ""}</span>`;
@@ -1073,6 +1110,7 @@
       async function viewLeadtime() {
         const c = $("#content");
         c.innerHTML = `
+          ${pageIntro("timer", "Tempo de reposição de cada item, decomposto por etapa: <b>fornecedor + terceiro + montagem</b>. O total da planilha entra como etapa do fornecedor. Quanto maior o total, mais cedo é preciso acionar a compra/fabricação.")}
           <div class="toolbar">
             <select id="ltGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
             <input id="ltBusca" class="grow" placeholder="Buscar código ou descrição…" />
@@ -1104,6 +1142,7 @@
         FORN_CACHE = await rpc("wl_list_fornecedores", { p_only_active: false });
         const c = $("#content");
         c.innerHTML = `
+          ${pageIntro("package", "Cadastro de itens e componentes. A maior parte vem da <b>planilha conectada</b> e dos relatórios do ERP — aqui você pode <b>ajustar manualmente</b> o que faltar (lead time por etapa, estoque mínimo, fornecedor). O que você grava persiste até uma nova sincronização sobrescrever.")}
           <div class="toolbar">
             <select id="iGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
             <select id="iCurva" style="width:auto"><option value="">Todas as curvas</option><option>A</option><option>B</option><option>C</option></select>
@@ -1240,7 +1279,7 @@
       async function viewPlanos() {
         const rows = await rpc("wl_list_planos", { p_limit: 50 });
         const c = $("#content");
-        c.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Relatório</th><th>Competência</th><th>Limite</th><th class="num">Itens</th><th class="num">Alto</th><th class="num">Médio</th><th class="num">Baixo</th><th>Status</th><th>Processado em</th><th></th></tr></thead>
+        c.innerHTML = `${pageIntro("history", "Histórico dos <b>Relatórios de Necessidades</b> processados (cada um é um MRP). Clique em <b>Abrir</b> para ver as necessidades do relatório. Como o MRP é único, o relatório mais recente substitui o anterior.")}<div class="table-wrap"><table><thead><tr><th>Relatório</th><th>Competência</th><th>Limite</th><th class="num">Itens</th><th class="num">Alto</th><th class="num">Médio</th><th class="num">Baixo</th><th>Status</th><th>Processado em</th><th></th></tr></thead>
           <tbody>${rows.length ? rows.map((p) => `<tr>
             <td><strong>${esc(p.label)}</strong></td><td>${fmtDate(p.competencia)}</td><td>${fmtDate(p.data_limite)}</td>
             <td class="num">${p.total_itens || 0}</td><td class="num danger-cell">${p.risco_alto || 0}</td><td class="num">${p.risco_medio || 0}</td><td class="num">${p.risco_baixo || 0}</td>
@@ -1307,6 +1346,7 @@
           rows = rows.filter((d) => !d.session_id);
         } catch (err) { toast("Erro ao listar documentos: " + err.message, "error"); }
         c.innerHTML = `
+          ${pageIntro("file-text", "Base de conhecimento do copiloto (RAG). Documentos enviados aqui — políticas, contratos, manuais, históricos — ficam disponíveis para o assistente responder com base neles. Todos os usuários têm acesso de leitura.")}
           <div class="toolbar"><span class="muted grow">Base de conhecimento global do copiloto — todos têm acesso (políticas, contratos, históricos). <strong>${rows.length}</strong> documento(s).</span>
             <button class="btn-ghost btn-sm" id="docRefresh"><i data-lucide="refresh-cw"></i> Atualizar</button>
             ${isAdmin ? '<input type="file" id="docFile" class="hidden" /><button class="btn-ghost btn-sm" id="docPurge"><i data-lucide="trash-2"></i> Limpar base</button><button class="btn-pri btn-sm" id="docUp"><i data-lucide="upload"></i> Enviar documento</button>' : ""}</div>
@@ -1369,6 +1409,7 @@
         const rows = await rpc("wl_admin_list_users");
         const c = $("#content");
         c.innerHTML = `
+          ${pageIntro("users", "Gestão de acesso. <b>Administrador</b> pode atualizar dados, editar itens e gerenciar usuários; <b>Visualização</b> acompanha necessidades, estoque e lead times. O e-mail não pode ser alterado depois de criado.")}
           <div class="toolbar"><span class="muted grow">${rows.length} usuários.</span><button class="btn-pri btn-sm" id="uNew"><i data-lucide="user-plus"></i> Cadastrar usuário</button></div>
           <div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Confirmado</th><th>Criado</th><th></th></tr></thead>
           <tbody>${rows.map((u) => `<tr>
