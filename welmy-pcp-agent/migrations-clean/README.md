@@ -21,6 +21,7 @@ Prefixo de objetos: `wl_` · papel guardado em `raw_user_meta_data` (`role` ∈ 
 | 13 | `013_cobertura_estoque_minimo.sql` | **Motor de cobertura**: calcula `consumo_diario` do componente (Total Saídas ÷ 15 dias), **estoque mínimo = consumo × lead time** (`wl_item_estoque_minimo`), **dias até ruptura** e "cobre o lead time". Atualiza `wl_relatorio_estoque`, `wl_list_itens`, `wl_stats` para usar o mínimo calculado |
 | 14 | `014_plano_unico_mrp.sql` | **MRP único**: cada Relatório de Necessidades **substitui totalmente** o anterior — `wl_finalize_plano` passa a apagar os demais planos (cascade nas necessidades). Adiciona `wl_delete_plano` (exclusão manual) e `wl_reprocessar_plano` (reanalisa com as bases atuais) |
 | 15 | `015_mrp_arvore.sql` | **MRP em árvore** (`wl_mrp_arvore`): agrupa as necessidades por SKU final e devolve JSONB com **tempo total** (caminho crítico = maior lead time pendente), **tempo de cada item** e **o que já está OK** (necessidade líquida ≤ 0). Alimenta a tela MRP em árvore por SKU |
+| 16 | `016_inventario_delete_import.sql` | **Excluir importação de inventário** (`wl_delete_inventario_import`): remove um registro do histórico de importações de inventário sem alterar o `estoque_atual` dos itens. (Reprocessar inventário = reenviar o arquivo pela tela.) |
 
 ## Pré-requisitos
 - Extensão `vector` habilitada (Database → Extensions → `vector`).

@@ -76,7 +76,8 @@
       }
       .login-card { width: 380px; max-width: 92vw; background: #fff; border-radius: 18px; padding: 34px 30px; box-shadow: 0 20px 60px rgba(8,30,70,.35); }
       .brand-mark { font-weight: 800; letter-spacing: .5px; font-size: 30px; color: var(--pri2); }
-      .brand-mark small { display: block; font-size: 12px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+      .brand-mark img { display: block; height: 46px; width: auto; }
+      .brand-mark small { display: block; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: var(--muted); margin-top: 8px; }
       .login-card h1 { font-size: 16px; margin: 18px 0 4px; }
       .login-card p.sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
       .login-card .field { margin-bottom: 13px; }
@@ -89,8 +90,9 @@
         background: linear-gradient(180deg, var(--brand1), var(--brand2)); color: #eaf1fc;
         display: flex; flex-direction: column; padding: 18px 14px; z-index: 20;
       }
-      .sidebar .logo { font-weight: 800; font-size: 22px; color: #fff; letter-spacing: .5px; padding: 6px 10px 2px; display: flex; flex-direction: column; }
-      .sidebar .logo small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; color: #b8cdf0; }
+      .sidebar .logo { padding: 4px 6px 2px; display: flex; flex-direction: column; gap: 8px; }
+      .sidebar .logo img { display: block; height: 34px; width: auto; background: #fff; padding: 7px 12px; border-radius: 10px; align-self: flex-start; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+      .sidebar .logo small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; color: #b8cdf0; padding-left: 2px; }
       .nav { margin-top: 18px; display: flex; flex-direction: column; gap: 3px; flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-right: 2px; }
       .nav::-webkit-scrollbar { width: 6px; }
       .nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 6px; }
@@ -304,7 +306,7 @@
     <!-- ===================== LOGIN ===================== -->
     <div id="login">
       <div class="login-card">
-        <div class="brand-mark">WELMY<small>SUPRIMENTOS &amp; PCP</small></div>
+        <div class="brand-mark"><img src="https://images.tcdn.com.br/files/1214116/themes/3/img/settings/LogoWelmy200x70.png" alt="Welmy" /><small>SUPRIMENTOS &amp; PCP</small></div>
         <h1>Copiloto de Suprimentos e PCP</h1>
         <p class="sub">Entre para acompanhar necessidades, estoque e lead times.</p>
         <div class="field">
@@ -323,7 +325,7 @@
     <!-- ===================== APP ===================== -->
     <div id="app">
       <aside class="sidebar">
-        <div class="logo">WELMY<small>SUPRIMENTOS &amp; PCP</small></div>
+        <div class="logo"><img src="https://images.tcdn.com.br/files/1214116/themes/3/img/settings/LogoWelmy200x70.png" alt="Welmy" /><small>SUPRIMENTOS &amp; PCP</small></div>
         <nav class="nav" id="nav">
           <a data-view="necessidades"><i data-lucide="list-checks"></i> Necessidades</a>
           <a data-view="estoque"><i data-lucide="boxes"></i> Estoque</a>
@@ -629,8 +631,8 @@
           <div class="grid2">
             <div class="table-wrap"><table><thead><tr><th>Relatório de Necessidades</th><th>Competência</th><th class="num">Itens</th><th>Quando</th><th></th></tr></thead>
               <tbody id="dzHistNec"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
-            <div class="table-wrap"><table><thead><tr><th>Inventário</th><th class="num">Atualizados</th><th class="num">Criados</th><th>Quando</th></tr></thead>
-              <tbody id="dzHistInv"><tr><td colspan="4" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Inventário</th><th class="num">Atualizados</th><th class="num">Criados</th><th>Quando</th><th></th></tr></thead>
+              <tbody id="dzHistInv"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
           </div>`;
         if (window.lucide) lucide.createIcons();
 
@@ -653,9 +655,15 @@
             $("#dzHistInv").innerHTML = (imps && imps.length) ? imps.map((i) => `<tr>
               <td><strong>${esc(i.arquivo || "Inventário")}</strong></td>
               <td class="num">${fmtNum(i.atualizados)}</td><td class="num">${fmtNum(i.criados)}</td>
-              <td>${fmtDate(i.created_at)}</td></tr>`).join("")
-              : `<tr><td colspan="4" class="empty">Nenhuma atualização ainda.</td></tr>`;
-          } catch (e) { $("#dzHistInv").innerHTML = `<tr><td colspan="4" class="empty">${esc(e.message)}</td></tr>`; }
+              <td>${fmtDate(i.created_at)}</td>
+              <td class="num" style="white-space:nowrap">
+                <button class="btn-ghost btn-sm" data-inv-reproc title="Reenviar um arquivo de inventário">Reprocessar</button>
+                <button class="btn-ghost btn-sm" data-inv-del="${i.id}" data-arq="${esc(i.arquivo || "Inventário")}" title="Remover esta importação do histórico">Excluir</button>
+              </td></tr>`).join("")
+              : `<tr><td colspan="5" class="empty">Nenhuma atualização ainda.</td></tr>`;
+            $("#dzHistInv").querySelectorAll("button[data-inv-reproc]").forEach((b) => b.addEventListener("click", () => input.click()));
+            $("#dzHistInv").querySelectorAll("button[data-inv-del]").forEach((b) => b.addEventListener("click", () => delInventario(b.dataset.invDel, b.dataset.arq)));
+          } catch (e) { $("#dzHistInv").innerHTML = `<tr><td colspan="5" class="empty">${esc(e.message)}</td></tr>`; }
         };
         reloadHist();
 
@@ -680,6 +688,20 @@
             toast("Relatório excluído.", "success");
             await reloadHist();
           } catch (e) { toast("Falha ao excluir: " + e.message, "error"); }
+        }
+
+        // Excluir uma importação de inventário do histórico (não altera o estoque dos itens).
+        async function delInventario(id, arq) {
+          const ok = await confirmDialog(`Remover a importação “${arq || "Inventário"}” do histórico? O estoque atual dos itens não será alterado.`, { okText: "Excluir" });
+          if (!ok) return;
+          try {
+            await rpc("wl_delete_inventario_import", { p_import_id: id });
+            toast("Importação removida do histórico.", "success");
+            await reloadHist();
+          } catch (e) {
+            const faltaFn = /wl_delete_inventario_import|schema cache|404/i.test(e.message || "");
+            toast(faltaFn ? "Aplique a migração 016_inventario_delete_import.sql no Supabase." : "Falha ao excluir: " + e.message, "error");
+          }
         }
 
         async function syncPlanilha() {
@@ -966,6 +988,8 @@
             <select id="mPlano" style="width:auto">${planos.map((p) => `<option value="${p.id}" ${p.id === curPlano ? "selected" : ""}>${esc(p.label)} · ${fmtDate(p.competencia)}</option>`).join("") || '<option value="">Sem relatórios</option>'}</select>
             <label class="row" style="margin:0;gap:6px"><input type="checkbox" id="mPend" style="width:auto" checked /> Só o que precisa de ação</label>
             <input id="mBusca" class="grow" placeholder="Buscar SKU, código ou descrição…" />
+            <button class="btn-ghost btn-sm" id="mReproc" title="Reanalisar este relatório com as bases atuais"><i data-lucide="refresh-cw"></i> Reprocessar</button>
+            <button class="btn-ghost btn-sm" id="mDel" title="Excluir este relatório"><i data-lucide="trash-2"></i> Excluir</button>
             <span class="muted">Árvore por SKU: tempo total (caminho crítico) · tempo de cada item · o que já está OK.</span>
           </div>
           ${pageIntro("git-branch-plus", "Árvore do plano agrupada por SKU. Mostra <b>quanto tempo falta no total</b> (caminho crítico = item pendente mais demorado), <b>o tempo de cada item</b> e <b>o que já está OK</b>. A barra abaixo resume quanto já está em estoque, em compra e o que ainda falta.")}
@@ -991,6 +1015,30 @@
         $("#mPlano").addEventListener("change", () => { curPlano = $("#mPlano").value; reload(); });
         $("#mPend").addEventListener("change", render);
         let dt; $("#mBusca").addEventListener("input", () => { clearTimeout(dt); dt = setTimeout(render, 250); });
+        $("#mReproc").addEventListener("click", async (ev) => {
+          const id = $("#mPlano").value || curPlano;
+          if (!id) { toast("Selecione um relatório.", "error"); return; }
+          const btn = ev.currentTarget; btn.disabled = true;
+          try {
+            const r = await rpc("wl_reprocessar_plano", { p_plano_id: id });
+            toast(`Relatório reprocessado${r && r.reanalisados != null ? ` — ${r.reanalisados} itens` : ""}.`, "success");
+            await reload();
+          } catch (e) { toast("Falha ao reprocessar: " + e.message, "error"); }
+          finally { btn.disabled = false; }
+        });
+        $("#mDel").addEventListener("click", async () => {
+          const id = $("#mPlano").value || curPlano;
+          if (!id) { toast("Selecione um relatório.", "error"); return; }
+          const label = $("#mPlano").selectedOptions[0] ? $("#mPlano").selectedOptions[0].textContent : "";
+          const ok = await confirmDialog(`Excluir o relatório “${label}”? As necessidades desse plano serão removidas.`, { okText: "Excluir" });
+          if (!ok) return;
+          try {
+            await rpc("wl_delete_plano", { p_plano_id: id });
+            if (curPlano === id) curPlano = null;
+            toast("Relatório excluído.", "success");
+            navTo("mrp");
+          } catch (e) { toast("Falha ao excluir: " + e.message, "error"); }
+        });
         reload();
       }
 
@@ -1284,12 +1332,17 @@
             <td><strong>${esc(p.label)}</strong></td><td>${fmtDate(p.competencia)}</td><td>${fmtDate(p.data_limite)}</td>
             <td class="num">${p.total_itens || 0}</td><td class="num danger-cell">${p.risco_alto || 0}</td><td class="num">${p.risco_medio || 0}</td><td class="num">${p.risco_baixo || 0}</td>
             <td><span class="pill">${esc(p.status)}</span></td><td>${fmtDate(p.finished_at || p.created_at)}</td>
-            <td><button class="btn-ghost btn-sm" data-open="${p.id}">Abrir</button>${isAdmin ? `<button class="btn-ghost btn-sm" data-re="${p.id}">Reanalisar</button>` : ""}</td>
+            <td style="white-space:nowrap"><button class="btn-ghost btn-sm" data-open="${p.id}">Abrir</button>${isAdmin ? `<button class="btn-ghost btn-sm" data-re="${p.id}" title="Reanalisar com as bases atuais">Reprocessar</button><button class="btn-ghost btn-sm" data-del="${p.id}" data-label="${esc(p.label)}" title="Excluir relatório">Excluir</button>` : ""}</td>
           </tr>`).join("") : `<tr><td colspan="10" class="empty">Nenhum relatório processado ainda.</td></tr>`}</tbody></table></div>`;
         c.querySelectorAll("button[data-open]").forEach((b) => b.addEventListener("click", () => { curPlano = b.dataset.open; navTo("necessidades"); }));
         c.querySelectorAll("button[data-re]").forEach((b) => b.addEventListener("click", async () => {
           b.disabled = true; b.textContent = "…";
-          try { await rpc("wl_analisar_plano", { p_plano_id: b.dataset.re }); toast("Relatório reanalisado.", "success"); viewPlanos(); } catch (e) { toast(e.message, "error"); b.disabled = false; b.textContent = "Reanalisar"; }
+          try { await rpc("wl_analisar_plano", { p_plano_id: b.dataset.re }); toast("Relatório reprocessado.", "success"); viewPlanos(); } catch (e) { toast(e.message, "error"); b.disabled = false; b.textContent = "Reprocessar"; }
+        }));
+        c.querySelectorAll("button[data-del]").forEach((b) => b.addEventListener("click", async () => {
+          const ok = await confirmDialog(`Excluir o relatório “${b.dataset.label || ""}”? As necessidades desse plano serão removidas.`, { okText: "Excluir" });
+          if (!ok) return;
+          try { await rpc("wl_delete_plano", { p_plano_id: b.dataset.del }); if (curPlano === b.dataset.del) curPlano = null; toast("Relatório excluído.", "success"); viewPlanos(); } catch (e) { toast("Falha ao excluir: " + e.message, "error"); }
         }));
       }
 
