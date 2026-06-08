@@ -1,0 +1,223 @@
+{
+  "name": "Welmy-Relatorio",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-relatorio",
+        "responseMode": "responseNode",
+        "options": { "binaryData": true, "rawBody": false }
+      },
+      "id": "f0000001-0000-4000-8000-000000000001",
+      "name": "Receive Relatorio",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "welmy-relatorio"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Descobre o tipo do arquivo (PDF x planilha) e guarda metadados.\nconst item = $input.first();\nconst bin = (item.binary && item.binary.data) || {};\nconst name = (bin.fileName || '').toString().toLowerCase();\nconst mime = (bin.mimeType || '').toString().toLowerCase();\nlet kind = 'spreadsheet';\nif (name.endsWith('.pdf') || mime.includes('pdf')) kind = 'pdf';\nreturn [{ json: { kind, arquivo: bin.fileName || 'Relatório' }, binary: item.binary }];"
+      },
+      "id": "f0000002-0000-4000-8000-000000000002",
+      "name": "Detect Kind",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            { "id": "k1", "leftValue": "={{ $json.kind }}", "rightValue": "pdf", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0000003-0000-4000-8000-000000000003",
+      "name": "É PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [380, 0]
+    },
+    {
+      "parameters": { "operation": "pdf", "binaryPropertyName": "data", "options": {} },
+      "id": "f0000004-0000-4000-8000-000000000004",
+      "name": "Extract PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [560, -120]
+    },
+    {
+      "parameters": { "operation": "xlsx", "binaryPropertyName": "data", "options": { "headerRow": true, "rawData": false } },
+      "id": "f0000005-0000-4000-8000-000000000005",
+      "name": "Extract Spreadsheet",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [560, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta automaticamente Inventário x Necessidades e normaliza as linhas\n// conforme o layout real dos relatórios do ERP da Welmy.\nconst detect = $('Detect Kind').first().json || {};\nconst arquivo = detect.arquivo || 'Relatório';\nconst items = $input.all();\nconst first = items[0] && items[0].json;\nconst isPdf = !!(first && typeof first.text === 'string' && first.text.length > 40);\n\nfunction parseInventarioPdf(text) {\n  const rows = [];\n  let grupo = null;\n  const reGrupo = /Grupo de Estoque\\s*:?\\s*(.+)/i;\n  // NCM  codigo - descricao  qtd  und  valorUnit  valorTotal\n  const reItem = /^(\\d[\\d.]*)\\s+(\\S.*?)\\s+([\\d.]+,\\d+)\\s+([A-Za-z]{1,3})\\s+([\\d.]+,\\d+)\\s+([\\d.]+,\\d+)$/;\n  for (const raw of text.split(/\\r?\\n/)) {\n    const line = (raw || '').trim();\n    if (!line) continue;\n    if (/^Total\\b/i.test(line)) continue;\n    const g = line.match(reGrupo);\n    if (g) { grupo = g[1].trim(); continue; }\n    const m = line.match(reItem);\n    if (!m) continue;\n    const rest = m[2].trim();\n    const dash = rest.indexOf(' - ');\n    if (dash < 0) continue;\n    rows.push({\n      ncm: m[1].trim(),\n      codigo: rest.slice(0, dash).trim(),\n      descricao: rest.slice(dash + 3).trim(),\n      quantidade: m[3], unidade: m[4], valor_unitario: m[5], grupo\n    });\n  }\n  return rows;\n}\n\nfunction parseNecessidadesPdf(text) {\n  const rows = [];\n  let secao = null;\n  // O pdf-parse do n8n (v1.x) extrai os numeros COLADOS (sem espaco) e o C/F no\n  // meio da linha; outras versoes separam por espaco. Este parser tolera os dois.\n  // Cada numero tem sempre 4 casas decimais (BR: 1.200,0000). Layout por item:\n  //   CODIGO - DESCRICAO+UND <n1..n9> C|F <n10>\n  //   n9 (ultimo antes do C/F) = Necessidade final (liquida do ERP);\n  //   n8 = Total Saidas (bruta); n1 = Ped. Compra;\n  //   n10 (apos o C/F) = Est. Disp + Alo (estoque atual).\n  const UNITS = ['PC','UN','KG','M2','M3','MT','LT','CX','PR','PT','RL','CJ','GR','ML','BR','MM','CM','M'];\n  const reNum = /-?\\d{1,3}(?:\\.\\d{3})*,\\d{4}/g;\n  const reItem = /^(\\S+)\\s*-\\s*(.*?,\\d{4})\\s*([CF])\\s*(-?\\d{1,3}(?:\\.\\d{3})*,\\d{4})\\s*$/;\n  for (const raw of text.split(/\\r?\\n/)) {\n    const line = (raw || '').trim();\n    if (!line) continue;\n    if (/ITENS\\s+PAIS/i.test(line)) { secao = 'fabricado'; continue; }\n    if (/ITENS\\s+A\\s+COMPRAR/i.test(line)) { secao = 'comprado'; continue; }\n    if (/ITENS\\s+A\\s+FABRICAR/i.test(line)) { secao = 'fabricado'; continue; }\n    const m = line.match(reItem);\n    if (!m) continue;\n    const nums = (m[2].match(reNum) || []);\n    if (nums.length < 2) continue;\n    const cf = m[3];\n    let descUnid = m[2].replace(reNum, '').trim();\n    let unidade = '';\n    for (const u of UNITS) {\n      if (descUnid.toUpperCase().endsWith(u)) { unidade = u; descUnid = descUnid.slice(0, descUnid.length - u.length).trim(); break; }\n    }\n    rows.push({\n      codigo: m[1].trim(),\n      descricao: descUnid,\n      unidade,\n      grupo: cf === 'F' ? 'fabricado' : (cf === 'C' ? 'comprado' : secao),\n      estoque_atual: m[4],\n      pedido_aberto_qtd: nums[0] || '0',\n      necessidade_bruta: nums[nums.length - 2],\n      necessidade: nums[nums.length - 1]\n    });\n  }\n  return rows;\n}\n\nlet tipo = 'desconhecido';\nlet rows = [];\n\nif (isPdf) {\n  const text = first.text;\n  if (/REGISTRO DE INVENT[ÁA]RIO/i.test(text) || /Grupo de Estoque/i.test(text)) {\n    tipo = 'inventario'; rows = parseInventarioPdf(text);\n  } else if (/RELAT[ÓO]RIO DE NECESSIDADES/i.test(text) || /Necessidade/i.test(text)) {\n    tipo = 'necessidades'; rows = parseNecessidadesPdf(text);\n  }\n} else {\n  const norm = items.map((i) => i.json).filter((o) => o && Object.keys(o).length).map((o) => {\n    const out = {}; for (const k of Object.keys(o)) out[k.toString().trim().toLowerCase().replace(/\\s+/g, '_')] = o[k]; return out;\n  });\n  const keys = norm.length ? Object.keys(norm[0]).join(' ') : '';\n  if (/necessidade|saidas|requisitado/.test(keys)) { tipo = 'necessidades'; rows = norm; }\n  else if (/quantidade|estoque|saldo/.test(keys) \u0026\u0026 /valor|grupo|classifica|ncm/.test(keys)) { tipo = 'inventario'; rows = norm; }\n  else { tipo = 'desconhecido'; rows = norm; }\n}\n\nconst meta = ($('Receive Relatorio').first().json.body) || {};\nconst comp = (meta.competencia || '').toString().trim();\nconst competencia = comp ? (comp.length === 7 ? comp + '-01' : comp) : null;\n\nlet amostra_linhas = [];\nif (isPdf \u0026\u0026 rows.length === 0) {\n  amostra_linhas = first.text.split(/\\r?\\n/).map((l) => (l || '').trim()).filter((l) => /\\s-\\s/.test(l)).slice(0, 15);\n}\n\nreturn [{ json: {\n  tipo, arquivo,\n  label: (meta.label || '').toString().trim() || (tipo === 'inventario' ? 'Registro de Inventário' : 'Relatório de Necessidades'),\n  competencia,\n  total_linhas: rows.length,\n  amostra_linhas,\n  rows\n} }];"
+      },
+      "id": "f0000006-0000-4000-8000-000000000006",
+      "name": "Detectar e Normalizar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+                "conditions": [
+                  { "id": "t1", "leftValue": "={{ $json.tipo }}", "rightValue": "inventario", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "inventario"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+                "conditions": [
+                  { "id": "t2", "leftValue": "={{ $json.tipo }}", "rightValue": "necessidades", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "necessidades"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "f0000007-0000-4000-8000-000000000007",
+      "name": "Rota por Tipo",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1020, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_ingest_inventario($1, $2::jsonb) AS data;",
+        "options": { "queryReplacement": "={{ [$json.arquivo, JSON.stringify($json.rows)] }}" }
+      },
+      "id": "f0000008-0000-4000-8000-000000000008",
+      "name": "Ingest Inventário",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1260, -160],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"tipo\": \"inventario\", \"atualizados\": {{ $json.data.atualizados || 0 }}, \"criados\": {{ $json.data.criados || 0 }}, \"total\": {{ $json.data.total || 0 }} }",
+        "options": {}
+      },
+      "id": "f0000009-0000-4000-8000-000000000009",
+      "name": "Respond Inventário",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1480, -160]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_create_plano($1, $2::date) AS plano_id;",
+        "options": { "queryReplacement": "={{ [$json.label, $json.competencia] }}" }
+      },
+      "id": "f000000a-0000-4000-8000-00000000000a",
+      "name": "Create Plano",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1260, 80],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_ingest_necessidades($1::uuid, $2::jsonb) AS data;",
+        "options": { "queryReplacement": "={{ [$json.plano_id, JSON.stringify($('Detectar e Normalizar').first().json.rows)] }}" }
+      },
+      "id": "f000000b-0000-4000-8000-00000000000b",
+      "name": "Ingest Necessidades",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1480, 80],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_finalize_plano($1::uuid) AS data;",
+        "options": { "queryReplacement": "={{ [$('Create Plano').first().json.plano_id] }}" }
+      },
+      "id": "f000000c-0000-4000-8000-00000000000c",
+      "name": "Finalize Plano",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1700, 80],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"tipo\": \"necessidades\", \"plano_id\": \"{{ $('Create Plano').first().json.plano_id }}\", \"inseridos\": {{ $('Ingest Necessidades').first().json.data.inseridos || 0 }}, \"total_linhas\": {{ $('Detectar e Normalizar').first().json.total_linhas || 0 }}, \"amostra_linhas\": {{ JSON.stringify($('Detectar e Normalizar').first().json.amostra_linhas || []) }} }",
+        "options": {}
+      },
+      "id": "f000000d-0000-4000-8000-00000000000d",
+      "name": "Respond Necessidades",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1920, 80]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"tipo\": \"desconhecido\", \"total\": {{ $json.total_linhas || 0 }} }",
+        "options": { "responseCode": 422 }
+      },
+      "id": "f000000e-0000-4000-8000-00000000000e",
+      "name": "Respond Desconhecido",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1260, 320]
+    }
+  ],
+  "connections": {
+    "Receive Relatorio": { "main": [[{ "node": "Detect Kind", "type": "main", "index": 0 }]] },
+    "Detect Kind": { "main": [[{ "node": "É PDF?", "type": "main", "index": 0 }]] },
+    "É PDF?": {
+      "main": [
+        [{ "node": "Extract PDF", "type": "main", "index": 0 }],
+        [{ "node": "Extract Spreadsheet", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract PDF": { "main": [[{ "node": "Detectar e Normalizar", "type": "main", "index": 0 }]] },
+    "Extract Spreadsheet": { "main": [[{ "node": "Detectar e Normalizar", "type": "main", "index": 0 }]] },
+    "Detectar e Normalizar": { "main": [[{ "node": "Rota por Tipo", "type": "main", "index": 0 }]] },
+    "Rota por Tipo": {
+      "main": [
+        [{ "node": "Ingest Inventário", "type": "main", "index": 0 }],
+        [{ "node": "Create Plano", "type": "main", "index": 0 }],
+        [{ "node": "Respond Desconhecido", "type": "main", "index": 0 }]
+      ]
+    },
+    "Ingest Inventário": { "main": [[{ "node": "Respond Inventário", "type": "main", "index": 0 }]] },
+    "Create Plano": { "main": [[{ "node": "Ingest Necessidades", "type": "main", "index": 0 }]] },
+    "Ingest Necessidades": { "main": [[{ "node": "Finalize Plano", "type": "main", "index": 0 }]] },
+    "Finalize Plano": { "main": [[{ "node": "Respond Necessidades", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "id": "WelmyRelatorio",
+  "tags": []
+}

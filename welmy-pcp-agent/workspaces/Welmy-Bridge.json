@@ -1,0 +1,272 @@
+{
+  "name": "Welmy-Bridge",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-stats", "responseMode": "responseNode", "options": {} },
+      "id": "a1000001-0000-4000-8000-000000000001",
+      "name": "WH stats",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "welmy-tool-stats"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT wl_stats() AS data;", "options": {} },
+      "id": "a1000001-0000-4000-8000-000000000002",
+      "name": "Q stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 0],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a1000001-0000-4000-8000-000000000003",
+      "name": "R stats",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 0]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-dashboard", "responseMode": "responseNode", "options": {} },
+      "id": "a2000002-0000-4000-8000-000000000001",
+      "name": "WH dashboard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 160],
+      "webhookId": "welmy-tool-dashboard"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_dashboard_necessidades(\n  NULLIF('{{ $json.body.plano_id || '' }}','')::uuid,\n  NULLIF('{{ $json.body.risco || '' }}','')::text,\n  NULLIF('{{ $json.body.grupo || '' }}','')::text,\n  NULLIF('{{ $json.body.search || '' }}','')::text,\n  NULLIF('{{ $json.body.sort || '' }}','')::text,\n  COALESCE({{ $json.body.limit || 20 }}, 20),\n  COALESCE({{ $json.body.offset || 0 }}, 0)\n);", "options": {} },
+      "id": "a2000002-0000-4000-8000-000000000002",
+      "name": "Q dashboard",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 160],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a2000002-0000-4000-8000-000000000003",
+      "name": "R dashboard",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 160]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-necessidade", "responseMode": "responseNode", "options": {} },
+      "id": "a3000003-0000-4000-8000-000000000001",
+      "name": "WH necessidade",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 320],
+      "webhookId": "welmy-tool-necessidade"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT wl_get_necessidade('{{ $json.body.necessidade_id }}'::uuid) AS data;", "options": {} },
+      "id": "a3000003-0000-4000-8000-000000000002",
+      "name": "Q necessidade",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 320],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a3000003-0000-4000-8000-000000000003",
+      "name": "R necessidade",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 320]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-estoque", "responseMode": "responseNode", "options": {} },
+      "id": "a4000004-0000-4000-8000-000000000001",
+      "name": "WH estoque",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 480],
+      "webhookId": "welmy-tool-estoque"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_relatorio_estoque(\n  NULLIF('{{ $json.body.grupo || '' }}','')::text,\n  COALESCE({{ $json.body.apenas_abaixo_minimo || false }}, false)::boolean,\n  NULLIF('{{ $json.body.search || '' }}','')::text\n);", "options": {} },
+      "id": "a4000004-0000-4000-8000-000000000002",
+      "name": "Q estoque",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 480],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a4000004-0000-4000-8000-000000000003",
+      "name": "R estoque",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 480]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-mrp", "responseMode": "responseNode", "options": {} },
+      "id": "a5000005-0000-4000-8000-000000000001",
+      "name": "WH mrp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 640],
+      "webhookId": "welmy-tool-mrp"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_relatorio_mrp(\n  NULLIF('{{ $json.body.plano_id || '' }}','')::uuid\n);", "options": {} },
+      "id": "a5000005-0000-4000-8000-000000000002",
+      "name": "Q mrp",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 640],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a5000005-0000-4000-8000-000000000003",
+      "name": "R mrp",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 640]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-leadtime", "responseMode": "responseNode", "options": {} },
+      "id": "a6000006-0000-4000-8000-000000000001",
+      "name": "WH leadtime",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 800],
+      "webhookId": "welmy-tool-leadtime"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_leadtime_skus(\n  NULLIF('{{ $json.body.search || '' }}','')::text,\n  NULLIF('{{ $json.body.grupo || '' }}','')::text\n);", "options": {} },
+      "id": "a6000006-0000-4000-8000-000000000002",
+      "name": "Q leadtime",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 800],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a6000006-0000-4000-8000-000000000003",
+      "name": "R leadtime",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 800]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-planos", "responseMode": "responseNode", "options": {} },
+      "id": "a7000007-0000-4000-8000-000000000001",
+      "name": "WH planos",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 960],
+      "webhookId": "welmy-tool-planos"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_list_planos(COALESCE({{ $json.body.limit || 30 }}, 30));", "options": {} },
+      "id": "a7000007-0000-4000-8000-000000000002",
+      "name": "Q planos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 960],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a7000007-0000-4000-8000-000000000003",
+      "name": "R planos",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 960]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-learning", "responseMode": "responseNode", "options": {} },
+      "id": "a8000008-0000-4000-8000-000000000001",
+      "name": "WH learning",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1120],
+      "webhookId": "welmy-tool-learning"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT * FROM wl_learning_signals();", "options": {} },
+      "id": "a8000008-0000-4000-8000-000000000002",
+      "name": "Q learning",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 1120],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a8000008-0000-4000-8000-000000000003",
+      "name": "R learning",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 1120]
+    },
+
+    {
+      "parameters": { "httpMethod": "POST", "path": "welmy-tool-decision", "responseMode": "responseNode", "options": {} },
+      "id": "a9000009-0000-4000-8000-000000000001",
+      "name": "WH decision",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1280],
+      "webhookId": "welmy-tool-decision"
+    },
+    {
+      "parameters": { "operation": "executeQuery", "query": "SELECT wl_record_decision(\n  '{{ $json.body.necessidade_id }}'::uuid,\n  '{{ $json.body.acao }}',\n  NULL,\n  NULLIF('{{ $json.body.motivo || '' }}',''),\n  'ia'\n) AS data;", "options": {} },
+      "id": "a9000009-0000-4000-8000-000000000002",
+      "name": "Q decision",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 1280],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "id": "a9000009-0000-4000-8000-000000000003",
+      "name": "R decision",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 1280]
+    }
+  ],
+  "connections": {
+    "WH stats": { "main": [[{ "node": "Q stats", "type": "main", "index": 0 }]] },
+    "Q stats": { "main": [[{ "node": "R stats", "type": "main", "index": 0 }]] },
+    "WH dashboard": { "main": [[{ "node": "Q dashboard", "type": "main", "index": 0 }]] },
+    "Q dashboard": { "main": [[{ "node": "R dashboard", "type": "main", "index": 0 }]] },
+    "WH necessidade": { "main": [[{ "node": "Q necessidade", "type": "main", "index": 0 }]] },
+    "Q necessidade": { "main": [[{ "node": "R necessidade", "type": "main", "index": 0 }]] },
+    "WH estoque": { "main": [[{ "node": "Q estoque", "type": "main", "index": 0 }]] },
+    "Q estoque": { "main": [[{ "node": "R estoque", "type": "main", "index": 0 }]] },
+    "WH mrp": { "main": [[{ "node": "Q mrp", "type": "main", "index": 0 }]] },
+    "Q mrp": { "main": [[{ "node": "R mrp", "type": "main", "index": 0 }]] },
+    "WH leadtime": { "main": [[{ "node": "Q leadtime", "type": "main", "index": 0 }]] },
+    "Q leadtime": { "main": [[{ "node": "R leadtime", "type": "main", "index": 0 }]] },
+    "WH planos": { "main": [[{ "node": "Q planos", "type": "main", "index": 0 }]] },
+    "Q planos": { "main": [[{ "node": "R planos", "type": "main", "index": 0 }]] },
+    "WH learning": { "main": [[{ "node": "Q learning", "type": "main", "index": 0 }]] },
+    "Q learning": { "main": [[{ "node": "R learning", "type": "main", "index": 0 }]] },
+    "WH decision": { "main": [[{ "node": "Q decision", "type": "main", "index": 0 }]] },
+    "Q decision": { "main": [[{ "node": "R decision", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "id": "WelmyBridge",
+  "tags": []
+}

@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welmy — Copiloto de Suprimentos e PCP</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        /* Paleta Welmy (azul industrial) */
+        --bg: #f3f6fb;
+        --panel: #ffffff;
+        --card: #ffffff;
+        --line: #e3e9f2;
+        --txt: #16202e;
+        --muted: #667085;
+        --pri: #1769e0;
+        --pri2: #0f4fb0;
+        --pri-soft: #e8f1fe;
+        --brand1: #0f4fb0;
+        --brand2: #0a3576;
+        --ok: #16a34a;
+        --okbg: #e8f7ee;
+        --no: #dc2626;
+        --nobg: #fdeaea;
+        --warn: #d97706;
+        --warnbg: #fff4e3;
+        --chip: #eef2f8;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.06);
+        --sidebar-width: 256px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--txt);
+        font-size: 14px;
+      }
+      a { color: var(--pri2); }
+      button {
+        font-family: inherit; cursor: pointer; border: none; border-radius: 9px;
+        padding: 8px 14px; font-weight: 600;
+        transition: background .15s, color .15s, box-shadow .15s, transform .08s, filter .15s;
+      }
+      button:active { transform: translateY(1px); }
+      button:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.2); box-shadow: none; }
+      button:disabled:active { transform: none; }
+      .btn-pri { background: linear-gradient(135deg, var(--pri), var(--pri2)); color: #fff; box-shadow: 0 1px 2px rgba(15,79,176,.35); }
+      .btn-pri:hover { filter: brightness(1.06); box-shadow: 0 3px 10px rgba(15,79,176,.32); }
+      .btn-ok { background: linear-gradient(135deg, #1fb955, var(--ok)); color: #fff; }
+      .btn-ok:hover { filter: brightness(1.05); }
+      .btn-no { background: linear-gradient(135deg, #ef4444, var(--no)); color: #fff; }
+      .btn-no:hover { filter: brightness(1.05); }
+      .btn-ghost { background: #fff; color: var(--txt); border: 1px solid var(--line); }
+      .btn-ghost:hover { background: var(--pri-soft); color: var(--pri2); border-color: var(--pri); }
+      .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: 8px; }
+      input, select, textarea {
+        font-family: inherit; font-size: 14px; padding: 9px 11px;
+        border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--txt); width: 100%;
+      }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-soft); }
+      label { font-size: 12.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 5px; }
+      .hidden { display: none !important; }
+      .muted { color: var(--muted); }
+      .row { display: flex; gap: 10px; align-items: center; }
+      .wrap { flex-wrap: wrap; }
+      .grow { flex: 1; }
+
+      /* ===== Login ===== */
+      #login {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(1200px 600px at 70% -10%, #1769e022, transparent),
+                    linear-gradient(135deg, #0a3576, #0f4fb0);
+      }
+      .login-card { width: 380px; max-width: 92vw; background: #fff; border-radius: 18px; padding: 34px 30px; box-shadow: 0 20px 60px rgba(8,30,70,.35); }
+      .brand-mark { font-weight: 800; letter-spacing: .5px; font-size: 30px; color: var(--pri2); }
+      .brand-mark small { display: block; font-size: 12px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+      .login-card h1 { font-size: 16px; margin: 18px 0 4px; }
+      .login-card p.sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+      .login-card .field { margin-bottom: 13px; }
+      #loginErr { color: var(--no); font-size: 13px; min-height: 18px; margin-top: 8px; }
+
+      /* ===== Shell ===== */
+      #app { display: none; min-height: 100vh; }
+      .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width);
+        background: linear-gradient(180deg, var(--brand1), var(--brand2)); color: #eaf1fc;
+        display: flex; flex-direction: column; padding: 18px 14px; z-index: 20;
+      }
+      .sidebar .logo { font-weight: 800; font-size: 22px; color: #fff; letter-spacing: .5px; padding: 6px 10px 2px; display: flex; flex-direction: column; }
+      .sidebar .logo small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; color: #b8cdf0; }
+      .nav { margin-top: 18px; display: flex; flex-direction: column; gap: 3px; flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-right: 2px; }
+      .nav::-webkit-scrollbar { width: 6px; }
+      .nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 6px; }
+      .nav::-webkit-scrollbar-track { background: transparent; }
+      .nav a {
+        display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 10px;
+        color: #d6e3f7; text-decoration: none; font-weight: 600; font-size: 13.5px; cursor: pointer;
+        position: relative; transition: background .14s, color .14s;
+      }
+      .nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+      .nav a.active { background: #fff; color: var(--pri2); box-shadow: 0 2px 8px rgba(8,30,70,.18); }
+      .nav a.active::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 4px 4px 0; background: #fff; }
+      .nav a svg { width: 18px; height: 18px; flex: 0 0 auto; }
+      .nav .sep { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; color: #9fbbe8; padding: 14px 12px 4px; }
+      .sidebar .foot { flex: 0 0 auto; margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.12); }
+      .side-user { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 10px; }
+      .side-user .sa { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+      .side-user .si { min-width: 0; line-height: 1.3; }
+      .side-user .si b { display: block; font-size: 12.5px; color: #fff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .side-user .si span { display: block; font-size: 11px; color: #aac4e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      /* hambúrguer (mobile) + backdrop */
+      .menu-toggle { display: none; background: #fff; color: var(--pri2); border: 1px solid var(--line); width: 38px; height: 38px; padding: 0; align-items: center; justify-content: center; border-radius: 10px; }
+      .menu-toggle svg { width: 20px; height: 20px; }
+      #sbBackdrop { display: none; position: fixed; inset: 0; background: rgba(8,22,46,.45); z-index: 19; }
+      #sbBackdrop.show { display: block; }
+
+      .main { margin-left: var(--sidebar-width); padding: 0 0 60px; }
+      .topbar {
+        position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.86); backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line); padding: 12px 26px; display: flex; align-items: center; gap: 14px;
+      }
+      .topbar h2 { font-size: 17px; margin: 0; }
+      .topbar .who { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+      .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+      .content { padding: 22px 26px; }
+
+      /* ===== Responsivo (sidebar off-canvas no mobile) ===== */
+      @media (max-width: 900px) {
+        .menu-toggle { display: inline-flex; }
+        .sidebar { transform: translateX(-100%); transition: transform .22s ease; box-shadow: 0 0 40px rgba(8,22,46,.4); }
+        .sidebar.open { transform: none; }
+        .main { margin-left: 0; }
+        .topbar { padding: 10px 14px; }
+        .topbar h2 { font-size: 16px; }
+        .topbar .who .muted { display: none; }
+        .content { padding: 16px 14px; }
+      }
+
+      /* ===== Cards / KPIs ===== */
+      .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+      .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px; box-shadow: var(--shadow); }
+      .kpi .v { font-size: 26px; font-weight: 800; }
+      .kpi .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+      .kpi.alto .v { color: var(--no); }
+      .kpi.medio .v { color: var(--warn); }
+      .kpi.baixo .v { color: var(--ok); }
+      .kpi.info .v { color: var(--pri2); }
+
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+      .card .head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+      .card .head h3 { margin: 0; font-size: 15px; }
+      .card .body { padding: 16px 18px; }
+
+      .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+      .toolbar .grow { flex: 1; min-width: 180px; }
+
+      /* ===== Table ===== */
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); background: #fafbfe; position: sticky; top: 0; }
+      tbody tr:hover { background: #f7faff; cursor: default; }
+      td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+      .table-wrap::-webkit-scrollbar { height: 9px; width: 9px; }
+      .table-wrap::-webkit-scrollbar-thumb { background: #cdd8ea; border-radius: 9px; border: 2px solid #fff; }
+      .table-wrap::-webkit-scrollbar-thumb:hover { background: #b3c2dc; }
+      .table-wrap::-webkit-scrollbar-track { background: transparent; }
+
+      /* ===== Badges ===== */
+      .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+      .b-alto { background: var(--nobg); color: var(--no); }
+      .b-medio { background: var(--warnbg); color: var(--warn); }
+      .b-baixo { background: var(--okbg); color: var(--ok); }
+      .b-incompleto { background: #eef1f6; color: #5a6678; }
+      .b-grupo { background: var(--chip); color: #44506a; }
+      .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--chip); color: #44506a; }
+      .danger-cell { color: var(--no); font-weight: 700; }
+      .ok-cell { color: var(--ok); font-weight: 700; }
+
+      /* ===== MRP árvore ===== */
+      .mrp-sku { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 12px; }
+      .mrp-sku > summary { list-style: none; cursor: pointer; padding: 13px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .mrp-sku > summary::-webkit-details-marker { display: none; }
+      .mrp-sku > summary:hover { background: #f7faff; }
+      .mrp-sku-title { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+      .mrp-sku-title .muted { font-weight: 500; }
+      .mrp-chevron { width: 16px; height: 16px; color: var(--muted); transition: transform .18s ease; flex: 0 0 auto; }
+      .mrp-sku[open] > summary .mrp-chevron { transform: rotate(90deg); }
+      .mrp-sku-meta { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .mrp-lt { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--pri2); white-space: nowrap; }
+
+      /* ===== Cobertura (insight do plano) ===== */
+      .cov-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 16px; }
+      .cov-card:empty { display: none; }
+      .cov-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+      .cov-bar { display: flex; height: 14px; border-radius: 8px; overflow: hidden; background: var(--chip); }
+      .cov-bar > span { display: block; height: 100%; }
+      .cov-bar .cov-est { background: var(--ok); }
+      .cov-bar .cov-ped { background: var(--warn); }
+      .cov-bar .cov-buy { background: var(--no); }
+      .cov-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12.5px; color: var(--txt); }
+      .cov-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+      .cov-legend .dot.est { background: var(--ok); }
+      .cov-legend .dot.ped { background: var(--warn); }
+      .cov-legend .dot.buy { background: var(--no); }
+
+      .empty { padding: 40px; text-align: center; color: var(--muted); }
+      .spinner { width: 18px; height: 18px; border: 2px solid var(--pri-soft); border-top-color: var(--pri); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .pager { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+
+      /* ===== Modal ===== */
+      #modalRoot:empty { display: none; }
+      .modal-bg { position: fixed; inset: 0; background: rgba(12,24,48,.45); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+      .modal { background: #fff; border-radius: 16px; width: 560px; max-width: 96vw; max-height: 90vh; overflow: auto; box-shadow: 0 24px 70px rgba(8,30,70,.4); }
+      .modal.confirm { width: 420px; }
+      .modal .mhead { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; }
+      .modal .mhead h3 { margin: 0; font-size: 16px; }
+      .modal .close { margin-left: auto; background: none; color: var(--muted); padding: 4px 8px; font-size: 18px; }
+      .modal .body { padding: 20px; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+      .confirm-ico { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px; }
+      .confirm-ico.danger { background: var(--nobg); color: var(--no); }
+      .confirm-ico.ask { background: var(--pri-soft); color: var(--pri2); }
+      .confirm-msg { text-align: center; font-size: 14.5px; margin-bottom: 8px; }
+      .confirm-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+
+      /* ===== Toast ===== */
+      #toastRoot { position: fixed; right: 20px; bottom: 20px; z-index: 80; display: flex; flex-direction: column; gap: 10px; }
+      .toast { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--pri); border-radius: 10px; padding: 11px 14px; box-shadow: var(--shadow); opacity: 0; transform: translateX(20px); transition: .3s; min-width: 240px; }
+      .toast.show { opacity: 1; transform: none; }
+      .toast.success { border-left-color: var(--ok); }
+      .toast.error { border-left-color: var(--no); }
+      .toast .ti { width: 22px; height: 22px; border-radius: 50%; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+      .toast.success .ti { background: var(--okbg); color: var(--ok); }
+      .toast.error .ti { background: var(--nobg); color: var(--no); }
+
+      /* ===== Chat widget ===== */
+      #chatFab { position: fixed; right: 22px; bottom: 22px; z-index: 50; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--pri), var(--pri2)); color: #fff; box-shadow: 0 8px 24px rgba(15,79,176,.45); display: flex; align-items: center; justify-content: center; }
+      #chatFab svg { width: 24px; height: 24px; }
+      #chatPanel { position: fixed; right: 22px; bottom: 22px; z-index: 55; width: 410px; max-width: 94vw; height: 620px; max-height: 86vh; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgba(8,30,70,.4); display: none; flex-direction: column; overflow: hidden; }
+      #chatPanel.open { display: flex; }
+      .chat-head { background: linear-gradient(135deg, var(--brand1), var(--brand2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
+      .chat-head .t { font-weight: 700; }
+      .chat-head .t small { display: block; font-weight: 500; font-size: 11px; color: #cbdcf6; }
+      .chat-head button { background: rgba(255,255,255,.14); color: #fff; padding: 5px 9px; border-radius: 8px; font-size: 12px; }
+      .chat-head .x { margin-left: auto; }
+      #chatSessions { border-bottom: 1px solid var(--line); max-height: 160px; overflow: auto; background: #fafbfe; }
+      #chatSessions .s { padding: 9px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; cursor: pointer; font-size: 12.5px; }
+      #chatSessions .s:hover { background: var(--pri-soft); }
+      #msgs { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+      .msg { max-width: 85%; padding: 10px 13px; border-radius: 13px; font-size: 13.5px; line-height: 1.5; white-space: normal; }
+      .msg.u { align-self: flex-end; background: var(--pri); color: #fff; border-bottom-right-radius: 4px; }
+      .msg.a { align-self: flex-start; background: #f1f4f9; color: var(--txt); border-bottom-left-radius: 4px; }
+      .msg.a code { background: #e2e8f3; padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+      .msg.a table { font-size: 12px; margin: 6px 0; }
+      .msg.a th, .msg.a td { padding: 4px 7px; }
+      .chat-input { border-top: 1px solid var(--line); padding: 10px; display: flex; gap: 8px; align-items: flex-end; }
+      .chat-input textarea { resize: none; height: 44px; max-height: 140px; }
+      .chat-input button { flex-shrink: 0; }
+      .suggest { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px; }
+      .suggest button { background: var(--pri-soft); color: var(--pri2); font-size: 12px; padding: 6px 10px; border-radius: 999px; font-weight: 600; }
+
+      /* ===== Drag & drop (Atualizar dados) ===== */
+      .dz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 22px; }
+      .dropzone { border: 2px dashed var(--line); border-radius: 14px; background: #fff; padding: 22px; transition: border-color .15s, background .15s, transform .05s; }
+      .dropzone .dz-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 18px; border-radius: 11px; cursor: pointer; }
+      .dropzone .dz-ico { width: 54px; height: 54px; border-radius: 14px; background: var(--pri-soft); color: var(--pri2); display: flex; align-items: center; justify-content: center; }
+      .dropzone .dz-ico svg { width: 26px; height: 26px; }
+      .dropzone h3 { margin: 0; font-size: 15px; }
+      .dropzone .dz-hint { color: var(--mut); font-size: 12.5px; }
+      .dropzone .dz-file { font-size: 12.5px; font-weight: 600; color: var(--pri2); }
+      .dropzone.dragover { border-color: var(--pri); background: var(--pri-soft); transform: scale(1.01); }
+      .dropzone.busy { opacity: .7; pointer-events: none; }
+      .dropzone .dz-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+      .dropzone .dz-status { margin-top: 12px; font-size: 12.5px; min-height: 18px; }
+    </style>
+  </head>
+  <body>
+    <!-- ===================== LOGIN ===================== -->
+    <div id="login">
+      <div class="login-card">
+        <div class="brand-mark">WELMY<small>SUPRIMENTOS &amp; PCP</small></div>
+        <h1>Copiloto de Suprimentos e PCP</h1>
+        <p class="sub">Entre para acompanhar necessidades, estoque e lead times.</p>
+        <div class="field">
+          <label>E-mail</label>
+          <input id="email" type="email" placeholder="voce@welmy.com.br" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn-pri" id="btnLogin" style="width: 100%; margin-top: 6px">Entrar</button>
+        <div id="loginErr"></div>
+      </div>
+    </div>
+
+    <!-- ===================== APP ===================== -->
+    <div id="app">
+      <aside class="sidebar">
+        <div class="logo">WELMY<small>SUPRIMENTOS &amp; PCP</small></div>
+        <nav class="nav" id="nav">
+          <a data-view="necessidades"><i data-lucide="list-checks"></i> Necessidades</a>
+          <a data-view="estoque"><i data-lucide="boxes"></i> Estoque</a>
+          <a data-view="mrp"><i data-lucide="git-branch-plus"></i> MRP</a>
+          <a data-view="leadtime"><i data-lucide="timer"></i> Lead Time</a>
+          <a data-view="dados"><i data-lucide="upload-cloud"></i> Atualizar dados</a>
+          <div class="sep">Cadastros</div>
+          <a data-view="itens"><i data-lucide="package"></i> Itens / Componentes</a>
+          <a data-view="documentos"><i data-lucide="file-text"></i> Documentos (RAG)</a>
+          <a data-view="planos"><i data-lucide="history"></i> Relatórios processados</a>
+          <a data-view="usuarios" class="admin-only"><i data-lucide="users"></i> Usuários</a>
+        </nav>
+        <div class="foot" id="sideFoot"></div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <button class="menu-toggle" id="menuToggle" title="Menu"><i data-lucide="menu"></i></button>
+          <h2 id="viewTitle">Necessidades</h2>
+          <div class="who">
+            <span id="whoName" class="muted"></span>
+            <div class="avatar" id="avatar">?</div>
+            <button class="btn-ghost btn-sm" id="btnLogout">Sair</button>
+          </div>
+        </div>
+        <div class="content" id="content"></div>
+      </div>
+    </div>
+    <div id="sbBackdrop"></div>
+
+    <!-- Chat -->
+    <button id="chatFab" title="Copiloto"><i data-lucide="bot"></i></button>
+    <div id="chatPanel">
+      <div class="chat-head">
+        <i data-lucide="bot"></i>
+        <div class="t">Copiloto Welmy<small id="chatCtx">Suprimentos &amp; PCP</small></div>
+        <button id="newChat" title="Nova conversa">+ Novo</button>
+        <button id="histBtn" title="Histórico">Histórico</button>
+        <button class="x" id="closeChat">✕</button>
+      </div>
+      <div id="chatSessions" class="hidden"></div>
+      <div id="msgs"></div>
+      <div class="suggest" id="suggest"></div>
+      <div class="chat-input">
+        <button class="btn-ghost btn-sm" id="chatAttach" title="Anexar à conversa">📎</button>
+        <input type="file" id="chatFileInput" class="hidden" multiple />
+        <textarea id="chatInput" placeholder="Pergunte sobre necessidades, estoque, lead time…"></textarea>
+        <button class="btn-pri" id="sendChat">Enviar</button>
+      </div>
+    </div>
+
+    <div id="modalRoot"></div>
+    <div id="toastRoot"></div>
+
+    <script>
+      /* ============ CONFIG ============ */
+      const CONFIG = {
+        SUPABASE_URL: "https://longflatworm-supabase.cloudfy.live",
+        SUPABASE_ANON_KEY:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczNjY1NzE2LCJleHAiOjE4MDUyMDE3MTZ9.nM55mAkSiyvvaIoUACEw4pY4GSJVfvrMX7b1q5JVwyg",
+        // base dos webhooks n8n, ex.: https://seu-n8n.cloudfy.live/webhook
+        N8N_BASE: "https://longflatworm-n8n.cloudfy.live/webhook",
+      };
+      const COMPANY = "welmy";
+
+      const GRUPOS = {
+        materia_prima: "Matéria-prima",
+        comprado: "Comprado",
+        fabricado: "Fabricado",
+        fabricado_terceiro: "Fabricado (terceiro)",
+        embalagem: "Embalagem",
+      };
+      const ACOES = {
+        comprar: "Comprar", acionar_fornecedor: "Acionar fornecedor",
+        acompanhar_pedido: "Acompanhar pedido", fabricar: "Fabricar",
+        programar_fabricacao: "Programar fabricação", validar_estoque: "Validar estoque",
+        revisar_dado: "Revisar dado", ok: "OK",
+      };
+
+      /* ============ resilient storage (iframe/webhook safe) ============ */
+      (function () {
+        try {
+          window.localStorage.setItem("__t", "1");
+          window.localStorage.removeItem("__t");
+        } catch (e) {
+          const mem = {};
+          const fake = {
+            getItem: (k) => (k in mem ? mem[k] : null),
+            setItem: (k, v) => { mem[k] = String(v); },
+            removeItem: (k) => { delete mem[k]; },
+            clear: () => { for (const k in mem) delete mem[k]; },
+            key: (i) => Object.keys(mem)[i] || null,
+            get length() { return Object.keys(mem).length; },
+          };
+          try { Object.defineProperty(window, "localStorage", { value: fake, configurable: true }); } catch (_) {}
+        }
+        // navigator.locks: em sandbox/webhook (origin null) lança SecurityError e quebra o refresh de token
+        (function () {
+          const noop = {
+            request: async (n, o, cb) => {
+              const f = typeof o === "function" ? o : cb;
+              return f ? f({ name: n, mode: "exclusive" }) : undefined;
+            },
+            query: async () => ({ held: [], pending: [] }),
+          };
+          try {
+            Object.defineProperty(navigator, "locks", { value: noop, writable: true, configurable: true });
+          } catch (_) {
+            try { navigator.locks = noop; } catch (__) {}
+          }
+        })();
+      })();
+
+      const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+        auth: {
+          storageKey: "welmy-auth",
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          lock: async (_name, _t, fn) => fn(),
+        },
+      });
+
+      /* ============ state ============ */
+      let ME = null; // { id, email, full_name, role }
+      let isAdmin = false;
+      let appReady = false; // evita resetar a view a cada refresh de token
+      let currentView = "necessidades";
+      let curSession = null;
+      let curPlano = null;
+      let necPage = 0;
+      const PAGE_SIZE = 25;
+
+      /* ============ helpers ============ */
+      const $ = (s) => document.querySelector(s);
+      const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+      const esc = (s) => (s == null ? "" : String(s)).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      const fmtDate = (s) => { if (!s) return "—"; const d = new Date(s + (String(s).length === 10 ? "T00:00:00" : "")); return isNaN(d) ? "—" : d.toLocaleDateString("pt-BR"); };
+      const fmtNum = (v, d = 0) => { const n = Number(v); return !isFinite(n) ? "—" : n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }); };
+      const safeJson = async (r) => { const t = await r.text(); if (!t || !t.trim()) return null; try { return JSON.parse(t); } catch (_) { return null; } };
+      const stripCtx = (s) => (s == null ? "" : String(s)).replace(/^\s*\[(?:CONTEXTO|P\u00c1GINA|PAGINA)[^\]]*\]\s*/i, "");
+
+      async function rpc(fn, args) {
+        const { data, error } = await sb.rpc(fn, args || {});
+        if (error) throw new Error(error.message || ("Erro em " + fn));
+        return data;
+      }
+
+      /* ---- markdown renderer (respostas do assistente) ---- */
+      function mdInline(s) {
+        let h = esc(s);
+        h = h.replace(/`([^`]+)`/g, (m, c) => `<code>${c}</code>`);
+        h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, (m, t, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`);
+        h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/__([^_]+)__/g, "<strong>$1</strong>");
+        h = h.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+        return h;
+      }
+      function mdRender(src) {
+        if (src == null) return "";
+        const lines = String(src).replace(/\r\n/g, "\n").split("\n");
+        let html = "", i = 0, inList = false;
+        const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+        while (i < lines.length) {
+          let line = lines[i];
+          if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+            closeList();
+            const header = line.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+            i += 2; let rows = [];
+            while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+              rows.push(lines[i].trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim())); i++;
+            }
+            html += "<table><thead><tr>" + header.map((h) => `<th>${mdInline(h)}</th>`).join("") + "</tr></thead><tbody>" +
+              rows.map((r) => "<tr>" + r.map((c) => `<td>${mdInline(c)}</td>`).join("") + "</tr>").join("") + "</tbody></table>";
+            continue;
+          }
+          if (/^\s*[-*]\s+/.test(line)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${mdInline(line.replace(/^\s*[-*]\s+/, ""))}</li>`; i++; continue; }
+          closeList();
+          if (/^\s*#{1,3}\s+/.test(line)) { const lvl = line.match(/^\s*(#{1,3})/)[1].length; html += `<h${lvl + 2}>${mdInline(line.replace(/^\s*#{1,3}\s+/, ""))}</h${lvl + 2}>`; i++; continue; }
+          if (line.trim() === "") { html += ""; i++; continue; }
+          html += `<p>${mdInline(line)}</p>`; i++;
+        }
+        closeList();
+        return html;
+      }
+
+      function riskBadge(r) {
+        const map = { alto: ["b-alto", "Alto"], medio: ["b-medio", "Médio"], baixo: ["b-baixo", "Baixo"], dado_incompleto: ["b-incompleto", "Dado incompleto"] };
+        const [c, l] = map[r] || ["b-incompleto", r || "—"];
+        return `<span class="badge ${c}">${l}</span>`;
+      }
+
+      /* ============ AUTH ============ */
+      async function doLogin() {
+        $("#loginErr").textContent = "";
+        const email = $("#email").value.trim();
+        const password = $("#password").value;
+        if (!email || !password) { $("#loginErr").textContent = "Informe e-mail e senha."; return; }
+        $("#btnLogin").disabled = true; $("#btnLogin").textContent = "Entrando…";
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        $("#btnLogin").disabled = false; $("#btnLogin").textContent = "Entrar";
+        if (error) { $("#loginErr").textContent = "Falha no login: " + error.message; }
+      }
+      $("#btnLogin").addEventListener("click", doLogin);
+      $("#password").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+
+      async function handleSession(session) {
+        if (!session) { $("#login").style.display = "flex"; $("#app").style.display = "none"; return; }
+        const u = session.user;
+        const m = u.user_metadata || {};
+        ME = { id: u.id, email: u.email, full_name: m.full_name || u.email, role: m.role || "visualizacao" };
+        isAdmin = ME.role === "admin";
+        $("#login").style.display = "none"; $("#app").style.display = "block";
+        $("#whoName").textContent = ME.full_name + (isAdmin ? " · Admin" : "");
+        $("#avatar").textContent = (ME.full_name || "?").trim().charAt(0).toUpperCase();
+        $("#sideFoot").innerHTML = `<div class="side-user"><div class="sa">${esc((ME.full_name || "?").trim().charAt(0).toUpperCase())}</div><div class="si"><b>${esc(ME.full_name)}</b><span>${isAdmin ? "Administrador" : "Visualização"} · ${esc(ME.email)}</span></div></div>`;
+        document.querySelectorAll(".admin-only").forEach((e) => e.classList.toggle("hidden", !isAdmin));
+        if (window.lucide) lucide.createIcons();
+        // Só navega na primeira sessão. Eventos posteriores (TOKEN_REFRESHED, etc.)
+        // não devem resetar a tela atual para Necessidades.
+        if (!appReady) { appReady = true; navTo("necessidades"); }
+      }
+      sb.auth.getSession().then(({ data }) => handleSession(data.session));
+      sb.auth.onAuthStateChange((_e, s) => handleSession(s));
+      $("#btnLogout").addEventListener("click", async () => { await sb.auth.signOut(); ME = null; handleSession(null); });
+
+      /* ============ ROUTER ============ */
+      const VIEW_TITLES = {
+        necessidades: "Necessidades", estoque: "Estoque", mrp: "MRP — Árvore por SKU", leadtime: "Lead Time",
+        dados: "Atualizar dados",
+        itens: "Itens / Componentes", documentos: "Documentos (RAG)",
+        planos: "Relatórios processados", usuarios: "Usuários",
+      };
+      function navTo(view) {
+        if (view === "usuarios" && !isAdmin) view = "necessidades";
+        currentView = view;
+        document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.view === view));
+        $("#viewTitle").textContent = VIEW_TITLES[view] || view;
+        $("#chatCtx").textContent = VIEW_TITLES[view] || "Suprimentos & PCP";
+        const render = { necessidades: viewNecessidades, estoque: viewEstoque, mrp: viewMrp, leadtime: viewLeadtime, dados: viewDados, itens: viewItens, documentos: viewDocumentos, planos: viewPlanos, usuarios: viewUsuarios }[view];
+        $("#content").innerHTML = `<div class="empty"><span class="spinner"></span> Carregando…</div>`;
+        Promise.resolve().then(render).catch((e) => { $("#content").innerHTML = `<div class="empty">Erro: ${esc(e.message)}</div>`; });
+      }
+      document.querySelectorAll("#nav a").forEach((a) => a.addEventListener("click", () => { navTo(a.dataset.view); setSidebar(false); }));
+
+      /* ============ SIDEBAR (mobile) ============ */
+      function setSidebar(open) {
+        $(".sidebar").classList.toggle("open", open);
+        $("#sbBackdrop").classList.toggle("show", open);
+      }
+      $("#menuToggle").addEventListener("click", () => setSidebar(!$(".sidebar").classList.contains("open")));
+      $("#sbBackdrop").addEventListener("click", () => setSidebar(false));
+
+      function pageContextLabel() { return VIEW_TITLES[currentView] || currentView; }
+      function refreshCurrentView() { navTo(currentView); }
+
+      /* ================= VIEW: ATUALIZAR DADOS (drag & drop) ================= */
+      async function viewDados() {
+        const c = $("#content");
+        const comp = new Date().toISOString().slice(0, 7);
+        c.innerHTML = `
+          <p class="muted" style="margin:0 0 16px">Aqui você só precisa soltar os <strong>PDFs dos relatórios do ERP</strong> (Registro de Inventário e Relatório de Necessidades). O sistema reconhece cada tipo sozinho, atualiza o estoque e gera o plano. Os dados de SKU, curva, consumo, lead time e fornecedor vêm direto da <strong>planilha conectada</strong> — sincronizados automaticamente antes de processar e também pelo botão abaixo.</p>
+          <div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;margin:0 0 16px">
+            <div class="dz-ico" style="flex:none"><i data-lucide="table-2"></i></div>
+            <div style="flex:1;min-width:220px">
+              <h3 style="margin:0;font-size:15px">Planilha de SKUs conectada</h3>
+              <div class="dz-hint">Abas <strong>ANALISE DE SKUS</strong> (produtos finais) e <strong>LEAD TIMES</strong> (componentes: descrição, unidade, fábrica/comprado, fornecedor, prazo). Lida direto do Google Sheets — sem precisar subir arquivo.</div>
+              <div class="dz-status" id="dzSyncStatus"></div>
+            </div>
+            <button class="btn-primary btn-sm" id="btnSyncPlan" style="flex:none"><i data-lucide="refresh-cw"></i> Sincronizar planilha</button>
+          </div>
+          <div class="dz-grid">
+            <div class="dropzone" id="dzAll" style="grid-column:1 / -1">
+              <div class="dz-inner">
+                <div class="dz-ico"><i data-lucide="upload-cloud"></i></div>
+                <h3>Soltar PDFs dos relatórios</h3>
+                <div class="dz-hint">Inventário → atualiza o estoque físico · Necessidades → gera o plano e a análise de risco. Pode soltar os dois (ou vários) de uma vez. Aceita PDF, Excel e CSV.</div>
+                <div class="dz-file" id="dzAllFile"></div>
+              </div>
+              <div class="dz-fields">
+                <div><label>Rótulo (necessidades)</label><input id="dzRelLabel" placeholder="Relatório ${comp}" /></div>
+                <div><label>Competência</label><input id="dzRelComp" type="month" value="${comp}" /></div>
+              </div>
+              <div class="dz-status" id="dzAllStatus"></div>
+              <input type="file" id="dzAllInput" class="hidden" accept=".pdf,.xlsx,.xls,.csv" multiple />
+            </div>
+          </div>
+          <h3 style="margin:6px 0 10px;font-size:15px">Atualizações recentes</h3>
+          <div class="grid2">
+            <div class="table-wrap"><table><thead><tr><th>Relatório de Necessidades</th><th>Competência</th><th class="num">Itens</th><th>Quando</th><th></th></tr></thead>
+              <tbody id="dzHistNec"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Inventário</th><th class="num">Atualizados</th><th class="num">Criados</th><th>Quando</th></tr></thead>
+              <tbody id="dzHistInv"><tr><td colspan="4" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
+          </div>`;
+        if (window.lucide) lucide.createIcons();
+
+        const reloadHist = async () => {
+          try {
+            const planos = await rpc("wl_list_planos", { p_limit: 8 });
+            $("#dzHistNec").innerHTML = (planos && planos.length) ? planos.map((p) => `<tr>
+              <td><strong>${esc(p.label)}</strong></td><td>${fmtDate(p.competencia)}</td>
+              <td class="num">${p.total_itens || 0}</td><td>${fmtDate(p.finished_at || p.created_at)}</td>
+              <td class="num" style="white-space:nowrap">
+                <button class="btn-ghost btn-sm" data-reproc="${p.id}" title="Reanalisar com as bases atuais">Reprocessar</button>
+                <button class="btn-ghost btn-sm" data-del="${p.id}" data-label="${esc(p.label)}" title="Excluir relatório">Excluir</button>
+              </td></tr>`).join("")
+              : `<tr><td colspan="5" class="empty">Nenhum relatório ainda.</td></tr>`;
+            $("#dzHistNec").querySelectorAll("button[data-reproc]").forEach((b) => b.addEventListener("click", () => reprocPlano(b.dataset.reproc, b)));
+            $("#dzHistNec").querySelectorAll("button[data-del]").forEach((b) => b.addEventListener("click", () => delPlano(b.dataset.del, b.dataset.label)));
+          } catch (e) { $("#dzHistNec").innerHTML = `<tr><td colspan="5" class="empty">${esc(e.message)}</td></tr>`; }
+          try {
+            const imps = await rpc("wl_list_inventario_imports", { p_limit: 8 });
+            $("#dzHistInv").innerHTML = (imps && imps.length) ? imps.map((i) => `<tr>
+              <td><strong>${esc(i.arquivo || "Inventário")}</strong></td>
+              <td class="num">${fmtNum(i.atualizados)}</td><td class="num">${fmtNum(i.criados)}</td>
+              <td>${fmtDate(i.created_at)}</td></tr>`).join("")
+              : `<tr><td colspan="4" class="empty">Nenhuma atualização ainda.</td></tr>`;
+          } catch (e) { $("#dzHistInv").innerHTML = `<tr><td colspan="4" class="empty">${esc(e.message)}</td></tr>`; }
+        };
+        reloadHist();
+
+        // Reprocessar = reanalisa o plano com as bases atuais (estoque/pedidos/lead time).
+        async function reprocPlano(id, btn) {
+          if (btn) btn.disabled = true;
+          try {
+            const r = await rpc("wl_reprocessar_plano", { p_plano_id: id });
+            toast(`Relatório reprocessado${r && r.reanalisados != null ? ` — ${r.reanalisados} itens` : ""}.`, "success");
+            if (curPlano === id) curPlano = id;
+            await reloadHist();
+          } catch (e) { toast("Falha ao reprocessar: " + e.message, "error"); if (btn) btn.disabled = false; }
+        }
+
+        // Excluir um Relatório de Necessidades (remove o plano e suas linhas).
+        async function delPlano(id, label) {
+          const ok = await confirmDialog(`Excluir o relatório “${label || ""}”? As necessidades desse plano serão removidas.`, { okText: "Excluir" });
+          if (!ok) return;
+          try {
+            await rpc("wl_delete_plano", { p_plano_id: id });
+            if (curPlano === id) curPlano = null;
+            toast("Relatório excluído.", "success");
+            await reloadHist();
+          } catch (e) { toast("Falha ao excluir: " + e.message, "error"); }
+        }
+
+        async function syncPlanilha() {
+          const fd = new FormData();
+          fd.append("userId", ME.id);
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-migrate-planilha`, { method: "POST", body: fd });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const j = await safeJson(r);
+          const a = (j && j.atualizados) || 0, cr = (j && j.criados) || 0, rm = (j && j.removidos) || 0, cp = (j && j.componentes) || 0;
+          return `${a} atualizados${cr ? `, ${cr} criados` : ""}${cp ? `, ${cp} componentes` : ""}${rm ? `, ${rm} removidos` : ""}.`;
+        }
+
+        // Processa UM relatório do ERP (PDF/Excel/CSV): detecta Inventário x Necessidades.
+        async function processFile(f) {
+          const fd = new FormData();
+          fd.append("data", f, f.name);
+          fd.append("label", $("#dzRelLabel").value.trim() || f.name);
+          fd.append("competencia", $("#dzRelComp").value || "");
+          fd.append("userId", ME.id);
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-relatorio`, { method: "POST", body: fd });
+          if (!r.ok && r.status !== 422) throw new Error("HTTP " + r.status);
+          const j = await safeJson(r);
+          if (j && j.tipo === "inventario") {
+            const a = j.atualizados || 0, cr = j.criados || 0;
+            return `📦 Inventário: ${a} itens atualizados${cr ? `, ${cr} criados` : ""}.`;
+          }
+          if (j && j.tipo === "necessidades") {
+            if (j.plano_id) curPlano = j.plano_id;
+            return `📋 Necessidades${j.inseridos ? `: ${j.inseridos} itens processados` : ""}.`;
+          }
+          throw new Error("Não reconheci este relatório (use o PDF de Inventário ou de Necessidades).");
+        }
+
+        const zone = $("#dzAll"), input = $("#dzAllInput");
+        const doSync = async (silent) => {
+          const el = $("#dzSyncStatus"), btn = $("#btnSyncPlan");
+          if (btn) btn.disabled = true;
+          if (el) el.innerHTML = `<span class="spinner"></span> Lendo a planilha conectada…`;
+          try {
+            const msg = await syncPlanilha();
+            if (el) el.innerHTML = `<span style="color:var(--ok);font-weight:600">✓ Planilha sincronizada — ${esc(msg)}</span>`;
+            if (!silent) toast("Planilha sincronizada.", "success");
+            return true;
+          } catch (e) {
+            if (el) el.innerHTML = `<span class="danger-cell">✗ ${esc(e.message)}</span>`;
+            if (!silent) toast("Falha ao sincronizar a planilha.", "error");
+            return false;
+          } finally { if (btn) btn.disabled = false; }
+        };
+        const btnSync = $("#btnSyncPlan");
+        if (btnSync) btnSync.addEventListener("click", () => doSync(false));
+
+        const run = async (files) => {
+          files = Array.from(files || []).filter(Boolean);
+          if (!files.length) return;
+          zone.classList.add("busy");
+          const results = [];
+          try {
+            // Garante o catálogo fresco da planilha conectada antes de processar os relatórios.
+            await doSync(true);
+            for (const f of files) {
+              $("#dzAllFile").textContent = f.name;
+              $("#dzAllStatus").innerHTML = `<span class="spinner"></span> Enviando “${esc(f.name)}”…`;
+              try {
+                results.push(`<span style="color:var(--ok);font-weight:600">✓ ${esc(f.name)} — ${esc(await processFile(f))}</span>`);
+              } catch (e) {
+                results.push(`<span class="danger-cell">✗ ${esc(f.name)}: ${esc(e.message)}</span>`);
+              }
+              reloadHist();
+            }
+            $("#dzAllStatus").innerHTML = results.map((m) => `<div>${m}</div>`).join("");
+            toast(files.length > 1 ? `${files.length} arquivos processados.` : "Arquivo processado.", "success");
+            refreshCurrentView();
+          } finally { zone.classList.remove("busy"); }
+        };
+        zone.querySelector(".dz-inner").addEventListener("click", () => input.click());
+        input.addEventListener("change", (e) => { const fs = Array.from(e.target.files); e.target.value = ""; run(fs); });
+        ["dragenter", "dragover"].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add("dragover"); }));
+        ["dragleave", "drop"].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); if (ev === "dragleave" && zone.contains(e.relatedTarget)) return; zone.classList.remove("dragover"); }));
+        zone.addEventListener("drop", (e) => { run(e.dataTransfer.files); });
+      }
+
+      /* ================= VIEW: NECESSIDADES ================= */
+      async function viewNecessidades() {
+        const [stats, planos] = await Promise.all([rpc("wl_stats"), rpc("wl_list_planos", { p_limit: 30 })]);
+        curPlano = curPlano || stats.plano_id || (planos[0] && planos[0].id) || null;
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="kpis">
+            <div class="kpi alto"><div class="v">${stats.risco_alto}</div><div class="l">Risco alto</div></div>
+            <div class="kpi medio"><div class="v">${stats.risco_medio}</div><div class="l">Risco médio</div></div>
+            <div class="kpi baixo"><div class="v">${stats.risco_baixo}</div><div class="l">Risco baixo</div></div>
+            <div class="kpi"><div class="v">${stats.dado_incompleto}</div><div class="l">Dado incompleto</div></div>
+            <div class="kpi info"><div class="v">${stats.pendentes_decisao}</div><div class="l">Pendentes de decisão</div></div>
+            <div class="kpi info"><div class="v">${stats.itens_abaixo_minimo}</div><div class="l">Abaixo do mínimo</div></div>
+          </div>
+          <div class="toolbar">
+            <select id="fPlano" style="width:auto">${planos.map((p) => `<option value="${p.id}" ${p.id === curPlano ? "selected" : ""}>${esc(p.label)} · ${fmtDate(p.competencia)}</option>`).join("") || '<option value="">Sem relatórios</option>'}</select>
+            <select id="fRisco" style="width:auto"><option value="">Todos os riscos</option><option value="alto">Alto</option><option value="medio">Médio</option><option value="baixo">Baixo</option><option value="dado_incompleto">Dado incompleto</option></select>
+            <select id="fGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
+            <input id="fBusca" class="grow" placeholder="Buscar código, descrição ou SKU…" />
+            <select id="fSort" style="width:auto"><option value="">Prioridade</option><option value="ruptura">Dias até ruptura</option><option value="necessidade">Necessidade líquida</option></select>
+            <button class="btn-ghost btn-sm" id="btnIngest"><i data-lucide="upload"></i> Processar relatório</button>
+          </div>
+          <div class="table-wrap"><table id="necTable"><thead><tr>
+            <th>Código</th><th>Descrição</th><th>Grupo</th><th class="num">Nec. líq.</th><th class="num">Estoque</th><th class="num">Cobertura</th><th class="num">Ruptura</th><th>Data nec.</th><th>Risco</th><th>Ação sugerida</th><th></th>
+          </tr></thead><tbody><tr><td colspan="11" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>
+          <div class="pager"><span class="muted" id="necCount"></span><button class="btn-ghost btn-sm" id="prev">Anterior</button><button class="btn-ghost btn-sm" id="next">Próxima</button></div>`;
+        if (window.lucide) lucide.createIcons();
+        necPage = 0;
+        const reload = () => loadNec();
+        $("#fPlano").addEventListener("change", () => { curPlano = $("#fPlano").value; necPage = 0; reload(); });
+        ["fRisco", "fGrupo", "fSort"].forEach((id) => $("#" + id).addEventListener("change", () => { necPage = 0; reload(); }));
+        let deb; $("#fBusca").addEventListener("input", () => { clearTimeout(deb); deb = setTimeout(() => { necPage = 0; reload(); }, 350); });
+        $("#prev").addEventListener("click", () => { if (necPage > 0) { necPage--; reload(); } });
+        $("#next").addEventListener("click", () => { necPage++; reload(); });
+        $("#btnIngest").addEventListener("click", openIngestModal);
+        loadNec();
+      }
+      async function loadNec() {
+        const rows = await rpc("wl_dashboard_necessidades", {
+          p_plano_id: curPlano || null,
+          p_risco: $("#fRisco").value || null,
+          p_grupo: $("#fGrupo").value || null,
+          p_search: $("#fBusca").value.trim() || null,
+          p_sort: $("#fSort").value || null,
+          p_limit: PAGE_SIZE, p_offset: necPage * PAGE_SIZE,
+        });
+        const tb = $("#necTable").querySelector("tbody");
+        if (!rows || !rows.length) { tb.innerHTML = `<tr><td colspan="11" class="empty">Nenhuma necessidade encontrada.</td></tr>`; $("#necCount").textContent = ""; return; }
+        const total = rows[0].total_count;
+        tb.innerHTML = rows.map((r) => {
+          const rupt = r.dias_ate_ruptura == null ? "—" : (r.dias_ate_ruptura <= (r.lead_time_dias || 0) ? `<span class="danger-cell">${fmtNum(r.dias_ate_ruptura, 1)}d</span>` : fmtNum(r.dias_ate_ruptura, 1) + "d");
+          return `<tr>
+            <td><strong>${esc(r.codigo)}</strong></td>
+            <td>${esc(r.descricao || "—")}${r.sku_relacionado ? `<br><span class="pill">${esc(r.sku_relacionado)}</span>` : ""}</td>
+            <td><span class="badge b-grupo">${GRUPOS[r.grupo] || r.grupo}</span></td>
+            <td class="num ${r.necessidade_liquida > 0 ? "danger-cell" : ""}">${fmtNum(r.necessidade_liquida)}</td>
+            <td class="num">${fmtNum(r.estoque_atual)}</td>
+            <td class="num">${r.cobertura_dias == null ? "—" : fmtNum(r.cobertura_dias, 1) + "d"}</td>
+            <td class="num">${rupt}</td>
+            <td>${fmtDate(r.data_necessidade)}</td>
+            <td>${riskBadge(r.risco)}</td>
+            <td><span class="pill">${ACOES[r.acao_sugerida] || r.acao_sugerida || "—"}</span>${r.decisao ? `<br><span class="ok-cell" style="font-size:11px">✓ ${ACOES[r.decisao] || r.decisao}</span>` : ""}</td>
+            <td><button class="btn-ghost btn-sm" data-id="${r.id}">Ver</button></td>
+          </tr>`;
+        }).join("");
+        tb.querySelectorAll("button[data-id]").forEach((b) => b.addEventListener("click", () => openNecModal(b.dataset.id)));
+        $("#necCount").textContent = `${necPage * PAGE_SIZE + 1}–${Math.min((necPage + 1) * PAGE_SIZE, total)} de ${total}`;
+        $("#prev").disabled = necPage === 0;
+        $("#next").disabled = (necPage + 1) * PAGE_SIZE >= total;
+      }
+
+      async function openNecModal(id) {
+        const n = await rpc("wl_get_necessidade", { p_id: id });
+        if (!n) return;
+        const field = (l, v) => `<div><label>${l}</label><div>${v}</div></div>`;
+        openModal(`
+          <div class="mhead"><h3>${esc(n.codigo)} · ${esc(n.descricao || "")}</h3><button class="close">✕</button></div>
+          <div class="body">
+            <div class="row" style="margin-bottom:14px">${riskBadge(n.risco)} <span class="badge b-grupo">${GRUPOS[n.grupo] || n.grupo}</span> ${n.sku_relacionado ? `<span class="pill">SKU ${esc(n.sku_relacionado)}</span>` : ""}</div>
+            <div class="grid2">
+              ${field("Necessidade bruta", fmtNum(n.necessidade_bruta))}
+              ${field("Estoque atual", fmtNum(n.estoque_atual))}
+              ${field("Necessidade líquida", `<strong>${fmtNum(n.necessidade_liquida)}</strong>`)}
+              ${field("Pedido em aberto", fmtNum(n.pedido_aberto_qtd))}
+              ${field("Lead time", n.lead_time_dias != null ? fmtNum(n.lead_time_dias) + " dias" : "—")}
+              ${field("Cobertura", n.cobertura_dias != null ? fmtNum(n.cobertura_dias, 1) + " dias" : "—")}
+              ${field("Dias até ruptura", n.dias_ate_ruptura != null ? fmtNum(n.dias_ate_ruptura, 1) + " dias" : "—")}
+              ${field("Data de necessidade", fmtDate(n.data_necessidade))}
+              ${field("Impacto (SKUs)", n.impacto_skus)}
+            </div>
+            <div style="margin-top:14px"><label>Justificativa (regra)</label><div class="muted">${esc(n.justificativa || "—")}</div></div>
+            ${n.justificativa_ia ? `<div style="margin-top:10px"><label>Análise do copiloto</label><div>${mdRender(n.justificativa_ia)}</div></div>` : ""}
+            <div style="margin-top:18px"><label>Registrar decisão</label>
+              <div class="row wrap">
+                <select id="decAcao" style="width:auto">${Object.entries(ACOES).map(([k, v]) => `<option value="${k}" ${k === n.acao_sugerida ? "selected" : ""}>${v}</option>`).join("")}</select>
+                <input id="decMotivo" class="grow" placeholder="Motivo (opcional)" />
+                <button class="btn-ok btn-sm" id="decSave">Salvar decisão</button>
+              </div>
+            </div>
+          </div>`);
+        $("#decSave").addEventListener("click", async () => {
+          try {
+            await rpc("wl_record_decision", { p_necessidade_id: id, p_acao: $("#decAcao").value, p_motivo: $("#decMotivo").value.trim() || null });
+            toast("Decisão registrada.", "success"); closeModal(); loadNec();
+          } catch (e) { toast(e.message, "error"); }
+        });
+      }
+
+      function openIngestModal() {
+        openModal(`
+          <div class="mhead"><h3>Processar Relatório de Necessidades</h3><button class="close">✕</button></div>
+          <div class="body">
+            <p class="muted">Envie o PDF (ou Excel/CSV) do Relatório de Necessidades do ERP. O copiloto usa a Necessidade líquida do próprio relatório, cruza com o lead time da planilha e classifica o risco de cada componente.</p>
+            <div class="grid2">
+              <div><label>Rótulo</label><input id="igLabel" placeholder="Relatório Junho/2026" /></div>
+              <div><label>Competência</label><input id="igComp" type="month" /></div>
+            </div>
+            <div style="margin-top:12px"><label>Arquivo do relatório</label><input id="igFile" type="file" accept=".pdf,.xlsx,.xls,.csv" /></div>
+            <div class="actions"><button class="btn-ghost" id="igCancel">Cancelar</button><button class="btn-pri" id="igSend">Enviar para processamento</button></div>
+            <div id="igStatus" class="muted" style="margin-top:10px"></div>
+          </div>`);
+        $("#igCancel").addEventListener("click", closeModal);
+        $("#igSend").addEventListener("click", async () => {
+          const f = $("#igFile").files[0];
+          if (!f) { toast("Selecione o arquivo.", "error"); return; }
+          $("#igStatus").innerHTML = `<span class="spinner"></span> Processando…`;
+          try {
+            const fd = new FormData();
+            fd.append("data", f, f.name);
+            fd.append("label", $("#igLabel").value.trim() || f.name);
+            fd.append("competencia", $("#igComp").value || "");
+            fd.append("userId", ME.id);
+            const r = await fetch(`${CONFIG.N8N_BASE}/welmy-ingest`, { method: "POST", body: fd });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const j = await safeJson(r);
+            if (j && j.plano_id) curPlano = j.plano_id;
+            toast("Relatório processado." + (j && j.inseridos ? ` ${j.inseridos} itens.` : ""), "success");
+            closeModal(); refreshCurrentView();
+          } catch (e) { $("#igStatus").innerHTML = `<span class="danger-cell">Erro: ${esc(e.message)}</span>`; }
+        });
+      }
+
+      /* ================= VIEW: ESTOQUE ================= */
+      async function viewEstoque() {
+        const c = $("#content");
+        c.innerHTML = `
+          <div id="eKpis" class="kpis"></div>
+          <div class="toolbar">
+            <select id="eGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
+            <label class="row" style="margin:0;gap:6px"><input type="checkbox" id="eMin" style="width:auto" /> Só os que precisam cobrir o mínimo</label>
+            <input id="eBusca" class="grow" placeholder="Buscar código ou descrição…" />
+            <span class="muted">Mínimo = consumo × lead time. Ruptura = quantos dias o estoque sobrevive.</span>
+          </div>
+          <div class="table-wrap"><table id="eTable"><thead><tr>
+            <th>Código</th><th>Descrição</th><th>Grupo</th><th>Curva</th><th>Fornecedor</th><th class="num">Estoque</th><th class="num">Mínimo</th><th class="num">Falta</th><th class="num">Consumo/dia</th><th class="num">Ruptura</th><th class="num">Lead time</th><th>Status</th>
+          </tr></thead><tbody><tr><td colspan="12" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>`;
+        const reload = async () => {
+          // Busca tudo (sem o filtro "abaixo") para os KPIs refletirem o grupo/busca atuais;
+          // o filtro de foco no mínimo é aplicado só na tabela.
+          const rows = await rpc("wl_relatorio_estoque", { p_grupo: $("#eGrupo").value || null, p_apenas_abaixo_minimo: false, p_search: $("#eBusca").value.trim() || null }) || [];
+          const abaixo = rows.filter((r) => r.abaixo_minimo).length;
+          const naoCobre = rows.filter((r) => !r.abaixo_minimo && r.cobre_lead_time === false).length;
+          const ok = rows.filter((r) => !r.abaixo_minimo && r.cobre_lead_time !== false).length;
+          $("#eKpis").innerHTML = `
+            <div class="kpi"><div class="v">${rows.length}</div><div class="l">Itens no estoque</div></div>
+            <div class="kpi alto"><div class="v">${abaixo}</div><div class="l">Abaixo do mínimo</div></div>
+            <div class="kpi medio"><div class="v">${naoCobre}</div><div class="l">Não cobre lead time</div></div>
+            <div class="kpi baixo"><div class="v">${ok}</div><div class="l">OK</div></div>`;
+          const view = $("#eMin").checked ? rows.filter((r) => r.abaixo_minimo) : rows;
+          const tb = $("#eTable").querySelector("tbody");
+          tb.innerHTML = (view && view.length) ? view.map((r) => {
+            const falta = r.abaixo_minimo && r.estoque_minimo != null ? (Number(r.estoque_minimo) - Number(r.estoque_atual)) : null;
+            return `<tr>
+            <td><strong>${esc(r.codigo)}</strong></td><td>${esc(r.descricao || "—")}</td>
+            <td><span class="badge b-grupo">${GRUPOS[r.grupo] || r.grupo}</span></td>
+            <td>${r.curva ? `<span class="pill">${esc(r.curva)}</span>` : "—"}</td>
+            <td>${esc(r.fornecedor_nome || "—")}</td>
+            <td class="num ${r.abaixo_minimo ? "danger-cell" : ""}">${fmtNum(r.estoque_atual)}</td>
+            <td class="num">${r.estoque_minimo != null ? fmtNum(r.estoque_minimo) : "—"}</td>
+            <td class="num ${falta ? "danger-cell" : ""}">${falta ? fmtNum(falta) : "—"}</td>
+            <td class="num">${r.consumo_diario != null ? fmtNum(r.consumo_diario, 1) : "—"}</td>
+            <td class="num">${r.dias_ate_ruptura != null ? fmtNum(r.dias_ate_ruptura, 1) + "d" : "—"}</td>
+            <td class="num">${r.lead_time_total != null ? fmtNum(r.lead_time_total) + "d" : "—"}</td>
+            <td>${r.abaixo_minimo ? '<span class="badge b-alto">Abaixo do mínimo</span>' : (r.cobre_lead_time === false ? '<span class="badge b-medio">Não cobre lead time</span>' : '<span class="badge b-baixo">OK</span>')}</td>
+          </tr>`; }).join("") : `<tr><td colspan="12" class="empty">${$("#eMin").checked ? "Nenhum item abaixo do mínimo neste filtro." : "Nenhum item."}</td></tr>`;
+        };
+        $("#eGrupo").addEventListener("change", reload);
+        $("#eMin").addEventListener("change", reload);
+        let d; $("#eBusca").addEventListener("input", () => { clearTimeout(d); d = setTimeout(reload, 350); });
+        reload();
+      }
+
+      /* ================= VIEW: MRP (árvore por SKU) ================= */
+      async function viewMrp() {
+        const planos = await rpc("wl_list_planos", { p_limit: 30 });
+        curPlano = curPlano || (planos[0] && planos[0].id) || null;
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="toolbar">
+            <select id="mPlano" style="width:auto">${planos.map((p) => `<option value="${p.id}" ${p.id === curPlano ? "selected" : ""}>${esc(p.label)} · ${fmtDate(p.competencia)}</option>`).join("") || '<option value="">Sem relatórios</option>'}</select>
+            <label class="row" style="margin:0;gap:6px"><input type="checkbox" id="mPend" style="width:auto" checked /> Só o que precisa de ação</label>
+            <input id="mBusca" class="grow" placeholder="Buscar SKU, código ou descrição…" />
+            <span class="muted">Árvore por SKU: tempo total (caminho crítico) · tempo de cada item · o que já está OK.</span>
+          </div>
+          <div id="mKpis" class="kpis"></div>
+          <div id="mInsight" class="cov-card"></div>
+          <div id="mTree"><div class="empty"><span class="spinner"></span> Carregando…</div></div>`;
+        if (window.lucide) lucide.createIcons();
+        let MRP_DATA = null;
+        const render = () => renderMrpTree(MRP_DATA, $("#mPend").checked, $("#mBusca").value.trim().toLowerCase());
+        const reload = async () => {
+          $("#mTree").innerHTML = `<div class="empty"><span class="spinner"></span> Carregando…</div>`;
+          try {
+            MRP_DATA = await rpc("wl_mrp_arvore", { p_plano_id: $("#mPlano").value || curPlano || null });
+            render();
+          } catch (e) {
+            $("#mKpis").innerHTML = "";
+            const faltaFn = /wl_mrp_arvore|schema cache|404/i.test(e.message || "");
+            $("#mTree").innerHTML = `<div class="empty">${faltaFn
+              ? "A função <code>wl_mrp_arvore</code> ainda não existe no banco. Aplique a migração <strong>015_mrp_arvore.sql</strong> no Supabase (SQL Editor) e recarregue."
+              : "Erro ao carregar o MRP: " + esc(e.message)}</div>`;
+          }
+        };
+        $("#mPlano").addEventListener("change", () => { curPlano = $("#mPlano").value; reload(); });
+        $("#mPend").addEventListener("change", render);
+        let dt; $("#mBusca").addEventListener("input", () => { clearTimeout(dt); dt = setTimeout(render, 250); });
+        reload();
+      }
+
+      // Renderiza a árvore de MRP a partir do JSONB de wl_mrp_arvore.
+      function renderMrpTree(data, onlyPending, q) {
+        const kp = $("#mKpis"), tree = $("#mTree");
+        if (!kp || !tree) return;
+        if (!data || !data.plano_id) {
+          kp.innerHTML = "";
+          tree.innerHTML = `<div class="empty">Nenhum relatório processado ainda. Suba o Relatório de Necessidades em “Atualizar dados”.</div>`;
+          return;
+        }
+        const ltTotal = Number(data.lead_time_total_dias || 0);
+        kp.innerHTML = `
+          <div class="kpi"><div class="v">${data.total_itens || 0}</div><div class="l">Itens no plano</div></div>
+          <div class="kpi alto"><div class="v">${data.itens_pendentes || 0}</div><div class="l">Precisam de ação</div></div>
+          <div class="kpi baixo"><div class="v">${data.itens_ok || 0}</div><div class="l">Já OK</div></div>
+          <div class="kpi info"><div class="v">${ltTotal > 0 ? fmtNum(ltTotal) + "d" : "—"}</div><div class="l">Tempo total (caminho crítico)</div></div>
+          <div class="kpi info"><div class="v">${data.previsao_pronto ? fmtDate(data.previsao_pronto) : "—"}</div><div class="l">Previsão de ficar pronto</div></div>`;
+
+        // Insight de cobertura do plano: necessário vs (estoque + em compra) vs falta comprar.
+        const sNec = Number(data.soma_necessario || 0), sEst = Number(data.soma_estoque || 0);
+        const sComp = Number(data.soma_em_compra || 0), sBuy = Number(data.soma_a_comprar || 0);
+        const ins = $("#mInsight");
+        if (ins) {
+          if (sNec > 0) {
+            const pEst = Math.min(100, (sEst / sNec) * 100);
+            const pComp = Math.min(100 - pEst, (sComp / sNec) * 100);
+            const pBuy = Math.max(0, 100 - pEst - pComp);
+            ins.innerHTML = `
+              <div class="cov-head">
+                <span>Cobertura do plano</span>
+                <span class="muted">${data.itens_em_compra || 0} ${data.itens_em_compra === 1 ? "item já tem pedido em aberto" : "itens já têm pedido em aberto"}</span>
+              </div>
+              <div class="cov-bar" title="Estoque ${fmtNum(sEst)} · Em compra ${fmtNum(sComp)} · Falta comprar ${fmtNum(sBuy)} de ${fmtNum(sNec)}">
+                <span class="cov-est" style="width:${pEst}%"></span>
+                <span class="cov-ped" style="width:${pComp}%"></span>
+                <span class="cov-buy" style="width:${pBuy}%"></span>
+              </div>
+              <div class="cov-legend">
+                <span><i class="dot est"></i> Em estoque: <strong>${fmtNum(sEst)}</strong></span>
+                <span><i class="dot ped"></i> Em compra/produção: <strong>${fmtNum(sComp)}</strong></span>
+                <span><i class="dot buy"></i> Falta comprar/fabricar: <strong class="danger-cell">${fmtNum(sBuy)}</strong></span>
+                <span class="muted">Necessário total: <strong>${fmtNum(sNec)}</strong></span>
+              </div>`;
+          } else { ins.innerHTML = ""; }
+        }
+
+        let skus = (data.skus || []).map((s) => {
+          let comps = s.componentes || [];
+          if (q) comps = comps.filter((co) => (co.codigo || "").toLowerCase().includes(q) || (co.descricao || "").toLowerCase().includes(q) || (s.sku || "").toLowerCase().includes(q));
+          return { ...s, _comps: comps };
+        });
+        if (q) skus = skus.filter((s) => s._comps.length || (s.sku || "").toLowerCase().includes(q));
+        if (onlyPending) skus = skus.filter((s) => s.itens_pendentes > 0);
+
+        if (!skus.length) {
+          tree.innerHTML = `<div class="empty">${onlyPending ? "Tudo certo — nenhum item pendente neste plano." : "Sem itens neste relatório."}</div>`;
+          return;
+        }
+
+        tree.innerHTML = skus.map((s) => {
+          let comps = s._comps;
+          if (onlyPending) comps = comps.filter((co) => co.pendente);
+          const lt = Number(s.lead_time_total_dias || 0);
+          // Título do grupo: SKU (com descrição) quando há vínculo; senão agrupa por grupo do item.
+          const titulo = s.por_sku
+            ? `<strong>${esc(s.sku)}</strong>${s.sku_descricao ? ` <span class="muted">· ${esc(s.sku_descricao)}</span>` : ""}`
+            : `<strong>${esc(GRUPOS[s.grupo] || s.grupo || "Diversos")}</strong> <span class="muted">· sem vínculo de SKU</span>`;
+          const statusBadge = s.pronto
+            ? '<span class="badge b-baixo">Pronto</span>'
+            : `<span class="badge b-alto">${s.itens_pendentes} pendente${s.itens_pendentes > 1 ? "s" : ""}</span>`;
+          const emCompra = Number(s.itens_em_compra || 0);
+          const rows = comps.length ? comps.map((co) => {
+            const okCell = co.pendente
+              ? '<span class="badge b-alto">Precisa ação</span>'
+              : '<span class="badge b-baixo">OK</span>';
+            const isCrit = co.pendente && Number(co.lead_time_dias || 0) === lt && lt > 0;
+            const pedCell = Number(co.pedido_aberto_qtd || 0) > 0
+              ? `<span class="${co.coberto_por_pedido ? "ok-cell" : ""}">${fmtNum(co.pedido_aberto_qtd)}</span>${co.pedido_aberto_data ? `<br><span class="muted" style="font-size:11px">${fmtDate(co.pedido_aberto_data)}</span>` : ""}`
+              : "—";
+            return `<tr>
+              <td>${okCell}</td>
+              <td><strong>${esc(co.codigo)}</strong></td>
+              <td>${esc(co.descricao || "—")}</td>
+              <td><span class="badge b-grupo">${GRUPOS[co.grupo] || co.grupo}</span></td>
+              <td class="num">${fmtNum(co.necessidade_bruta)}</td>
+              <td class="num">${fmtNum(co.estoque_atual)}</td>
+              <td class="num">${pedCell}</td>
+              <td class="num ${co.pendente ? "danger-cell" : "ok-cell"}">${co.pendente ? fmtNum(co.necessidade_liquida) : "0"}</td>
+              <td class="num">${co.lead_time_dias != null ? fmtNum(co.lead_time_dias) + "d" : "—"}${isCrit ? ' <span class="pill" title="Define o tempo total deste SKU">gargalo</span>' : ""}</td>
+              <td>${riskBadge(co.risco)}</td>
+              <td><span class="pill">${ACOES[co.acao_sugerida] || co.acao_sugerida || "—"}</span></td>
+            </tr>`;
+          }).join("") : `<tr><td colspan="11" class="empty">Nenhum item ${onlyPending ? "pendente " : ""}neste SKU.</td></tr>`;
+          return `<details class="mrp-sku" ${s.pronto ? "" : "open"}>
+            <summary>
+              <span class="mrp-sku-title"><i data-lucide="chevron-right" class="mrp-chevron"></i> ${titulo}</span>
+              <span class="mrp-sku-meta">
+                ${statusBadge}
+                ${emCompra > 0 ? `<span class="pill" title="Itens com pedido de compra em aberto">${emCompra} em compra</span>` : ""}
+                ${Number(s.soma_a_comprar || 0) > 0 ? `<span class="pill" title="Quantidade total que falta comprar/fabricar">falta ${fmtNum(s.soma_a_comprar)}</span>` : ""}
+                <span class="pill">${s.itens_ok}/${s.total_itens} OK</span>
+                <span class="mrp-lt">${lt > 0 ? `⏱ ${fmtNum(lt)}d` : "⏱ pronto"}</span>
+              </span>
+            </summary>
+            <div class="table-wrap" style="border-radius:0;border:0;border-top:1px solid var(--line)"><table><thead><tr>
+              <th>Status</th><th>Código</th><th>Descrição</th><th>Grupo</th><th class="num">Necessário</th><th class="num">Estoque</th><th class="num">Em compra</th><th class="num">Falta</th><th class="num">Lead time</th><th>Risco</th><th>Ação</th>
+            </tr></thead><tbody>${rows}</tbody></table></div>
+          </details>`;
+        }).join("");
+        if (window.lucide) lucide.createIcons();
+      }
+
+      /* ================= VIEW: LEAD TIME ================= */
+      async function viewLeadtime() {
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="toolbar">
+            <select id="ltGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
+            <input id="ltBusca" class="grow" placeholder="Buscar código ou descrição…" />
+            <span class="muted">Lead time por etapa: fornecedor + terceiro + montagem. Total da planilha = etapa do fornecedor.</span>
+          </div>
+          <div class="table-wrap"><table id="ltTable"><thead><tr>
+            <th>Código</th><th>Descrição</th><th>Grupo</th><th>SKU</th><th>Fornecedor</th><th class="num">Fornec.</th><th class="num">Terceiro</th><th class="num">Montagem</th><th class="num">Total</th>
+          </tr></thead><tbody><tr><td colspan="9" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>`;
+        const reload = async () => {
+          const rows = await rpc("wl_leadtime_skus", { p_grupo: $("#ltGrupo").value || null, p_search: $("#ltBusca").value.trim() || null });
+          const tb = $("#ltTable").querySelector("tbody");
+          const d = (v) => (v == null || Number(v) === 0 ? "—" : fmtNum(v) + "d");
+          tb.innerHTML = (rows && rows.length) ? rows.map((r) => `<tr>
+            <td><strong>${esc(r.codigo)}</strong></td><td>${esc(r.descricao || "—")}</td>
+            <td><span class="badge b-grupo">${GRUPOS[r.grupo] || r.grupo}</span></td><td>${esc(r.sku_relacionado || "—")}</td>
+            <td>${esc(r.fornecedor_nome || "—")}</td>
+            <td class="num">${d(r.lt_fornecedor_dias)}</td><td class="num">${d(r.lt_terceiro_dias)}</td><td class="num">${d(r.lt_montagem_dias)}</td>
+            <td class="num"><strong>${r.lead_time_total != null ? fmtNum(r.lead_time_total) + "d" : "—"}</strong></td>
+          </tr>`).join("") : `<tr><td colspan="9" class="empty">Nenhum item.</td></tr>`;
+        };
+        $("#ltGrupo").addEventListener("change", reload);
+        let t; $("#ltBusca").addEventListener("input", () => { clearTimeout(t); t = setTimeout(reload, 350); });
+        reload();
+      }
+
+      /* ================= VIEW: ITENS ================= */
+      let FORN_CACHE = [];
+      async function viewItens() {
+        FORN_CACHE = await rpc("wl_list_fornecedores", { p_only_active: false });
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="toolbar">
+            <select id="iGrupo" style="width:auto"><option value="">Todos os grupos</option>${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
+            <select id="iCurva" style="width:auto"><option value="">Todas as curvas</option><option>A</option><option>B</option><option>C</option></select>
+            <label class="row" style="margin:0;gap:6px"><input type="checkbox" id="iMin" style="width:auto" /> Abaixo do mínimo</label>
+            <input id="iBusca" class="grow" placeholder="Buscar…" />
+            ${isAdmin ? '<button class="btn-pri btn-sm" id="iNew"><i data-lucide="plus"></i> Novo item</button>' : ""}
+          </div>
+          <div class="table-wrap"><table id="iTable"><thead><tr>
+            <th>Código</th><th>Descrição</th><th>Grupo</th><th>Curva</th><th>Fornecedor</th><th class="num">Estoque</th><th class="num">Mínimo</th><th class="num">Lead time</th><th></th>
+          </tr></thead><tbody><tr><td colspan="9" class="empty"><span class="spinner"></span></td></tr></tbody></table></div>`;
+        if (window.lucide) lucide.createIcons();
+        const reload = async () => {
+          const rows = await rpc("wl_list_itens", { p_only_active: false, p_grupo: $("#iGrupo").value || null, p_curva: $("#iCurva").value || null, p_search: $("#iBusca").value.trim() || null, p_abaixo_minimo: $("#iMin").checked });
+          const tb = $("#iTable").querySelector("tbody");
+          tb.innerHTML = (rows && rows.length) ? rows.map((r) => `<tr>
+            <td><strong>${esc(r.codigo)}</strong></td><td>${esc(r.descricao || "—")}</td>
+            <td><span class="badge b-grupo">${GRUPOS[r.grupo] || r.grupo}</span></td>
+            <td>${r.curva ? `<span class="pill">${esc(r.curva)}</span>` : "—"}</td>
+            <td>${esc(r.fornecedor_nome || "—")}</td>
+            <td class="num ${r.abaixo_minimo ? "danger-cell" : ""}">${fmtNum(r.estoque_atual)}</td>
+            <td class="num">${r.estoque_minimo != null ? fmtNum(r.estoque_minimo) : "—"}</td>
+            <td class="num">${r.lead_time_total != null ? fmtNum(r.lead_time_total) + "d" : "—"}</td>
+            <td>${isAdmin ? `<button class="btn-ghost btn-sm" data-edit='${esc(JSON.stringify(r))}'>Editar</button>` : ""}</td>
+          </tr>`).join("") : `<tr><td colspan="9" class="empty">Nenhum item.</td></tr>`;
+          tb.querySelectorAll("button[data-edit]").forEach((b) => b.addEventListener("click", () => openItemModal(JSON.parse(b.dataset.edit))));
+        };
+        $("#iGrupo").addEventListener("change", reload);
+        $("#iCurva").addEventListener("change", reload);
+        $("#iMin").addEventListener("change", reload);
+        let t; $("#iBusca").addEventListener("input", () => { clearTimeout(t); t = setTimeout(reload, 350); });
+        if (isAdmin) $("#iNew").addEventListener("click", () => openItemModal(null));
+        reload();
+      }
+      function openItemModal(it) {
+        it = it || {};
+        const fornOpts = `<option value="">— sem fornecedor —</option>` + FORN_CACHE.map((f) => `<option value="${f.id}" ${f.id === it.fornecedor_id ? "selected" : ""}>${esc(f.nome)}</option>`).join("");
+        openModal(`
+          <div class="mhead"><h3>${it.id ? "Editar item" : "Novo item"}</h3><button class="close">✕</button></div>
+          <div class="body">
+            <div class="grid2">
+              <div><label>Código *</label><input id="itCodigo" value="${esc(it.codigo || "")}" ${it.id ? "readonly" : ""} /></div>
+              <div><label>Descrição</label><input id="itDesc" value="${esc(it.descricao || "")}" /></div>
+              <div><label>Grupo</label><select id="itGrupo">${Object.entries(GRUPOS).map(([k, v]) => `<option value="${k}" ${k === it.grupo ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+              <div><label>Unidade</label><input id="itUnid" value="${esc(it.unidade || "un")}" /></div>
+              <div><label>SKU relacionado</label><input id="itSku" value="${esc(it.sku_relacionado || "")}" /></div>
+              <div><label>Curva</label><select id="itCurva"><option value="">—</option>${["A", "B", "C"].map((x) => `<option ${x === it.curva ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+              <div><label>Fornecedor</label><select id="itForn">${fornOpts}</select></div>
+              <div><label>Consumo diário</label><input id="itCons" type="number" step="0.01" value="${it.consumo_diario ?? ""}" /></div>
+              <div><label>Estoque atual</label><input id="itEst" type="number" step="0.01" value="${it.estoque_atual ?? 0}" /></div>
+              <div><label>Estoque mínimo (auto se vazio)</label><input id="itMin" type="number" step="0.01" value="${it.estoque_minimo ?? ""}" placeholder="consumo × lead time" /></div>
+              <div><label>Lead time fornecedor</label><input id="itLtF" type="number" step="0.5" value="${it.lt_fornecedor_dias ?? 0}" /></div>
+              <div><label>Lead time terceiro</label><input id="itLtT" type="number" step="0.5" value="${it.lt_terceiro_dias ?? 0}" /></div>
+              <div><label>Lead time montagem</label><input id="itLtM" type="number" step="0.5" value="${it.lt_montagem_dias ?? 0}" /></div>
+            </div>
+            <div class="actions">
+              ${it.id ? '<button class="btn-no" id="itDel" style="margin-right:auto">Excluir</button>' : ""}
+              <button class="btn-ghost" id="itCancel">Cancelar</button><button class="btn-pri" id="itSave">Salvar</button>
+            </div>
+          </div>`);
+        $("#itCancel").addEventListener("click", closeModal);
+        const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
+        $("#itSave").addEventListener("click", async () => {
+          if (!$("#itCodigo").value.trim()) { toast("Código é obrigatório.", "error"); return; }
+          try {
+            // patch parcial: só grava o que foi informado (não zera os outros campos).
+            // Uma planilha/relatório posterior pode sobrescrever via a ingestão.
+            await rpc("wl_patch_item", {
+              p_codigo: $("#itCodigo").value.trim(), p_descricao: $("#itDesc").value.trim() || null,
+              p_grupo: $("#itGrupo").value, p_unidade: $("#itUnid").value.trim() || null, p_sku_relacionado: $("#itSku").value.trim() || null,
+              p_curva: $("#itCurva").value || null, p_fornecedor_id: $("#itForn").value || null,
+              p_lt_fornecedor_dias: num("#itLtF"), p_lt_terceiro_dias: num("#itLtT"), p_lt_montagem_dias: num("#itLtM"),
+              p_estoque_atual: num("#itEst"), p_estoque_minimo: num("#itMin"), p_consumo_diario: num("#itCons"),
+            });
+            toast("Item salvo.", "success"); closeModal(); viewItens();
+          } catch (e) { toast(e.message, "error"); }
+        });
+        if (it.id) $("#itDel").addEventListener("click", async () => {
+          if (!(await confirmDialog(`Excluir o item "${it.codigo}"?`))) return;
+          try { await rpc("wl_admin_delete_item", { p_id: it.id }); toast("Item excluído.", "success"); closeModal(); viewItens(); } catch (e) { toast(e.message, "error"); }
+        });
+      }
+
+      /* ================= VIEW: FORNECEDORES ================= */
+      const TIPO_FORN = { fornecedor: "Fornecedor", terceiro: "Terceiro", montagem: "Montagem" };
+      async function viewFornecedores() {
+        const rows = await rpc("wl_list_fornecedores", { p_only_active: false });
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="toolbar"><span class="muted grow">${rows.length} fornecedores (nome vem da aba LEAD TIMES da planilha).</span>${isAdmin ? '<button class="btn-pri btn-sm" id="fNew"><i data-lucide="plus"></i> Novo fornecedor</button>' : ""}</div>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Tipo</th><th>CNPJ</th><th>Contato</th><th></th></tr></thead>
+          <tbody>${rows.length ? rows.map((f) => `<tr>
+            <td><strong>${esc(f.nome)}</strong></td><td><span class="pill">${TIPO_FORN[f.tipo] || f.tipo}</span></td>
+            <td>${esc(f.cnpj || "—")}</td><td>${esc(f.contato || "—")}</td>
+            <td>${isAdmin ? `<button class="btn-ghost btn-sm" data-edit='${esc(JSON.stringify(f))}'>Editar</button>` : ""}</td>
+          </tr>`).join("") : `<tr><td colspan="5" class="empty">Nenhum fornecedor.</td></tr>`}</tbody></table></div>`;
+        if (window.lucide) lucide.createIcons();
+        c.querySelectorAll("button[data-edit]").forEach((b) => b.addEventListener("click", () => openFornModal(JSON.parse(b.dataset.edit))));
+        if (isAdmin) $("#fNew").addEventListener("click", () => openFornModal(null));
+      }
+      function openFornModal(f) {
+        f = f || {};
+        openModal(`
+          <div class="mhead"><h3>${f.id ? "Editar fornecedor" : "Novo fornecedor"}</h3><button class="close">✕</button></div>
+          <div class="body">
+            <div class="grid2">
+              <div><label>Nome *</label><input id="fnNome" value="${esc(f.nome || "")}" /></div>
+              <div><label>Tipo</label><select id="fnTipo">${Object.entries(TIPO_FORN).map(([k, v]) => `<option value="${k}" ${k === f.tipo ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+              <div><label>CNPJ</label><input id="fnCnpj" value="${esc(f.cnpj || "")}" /></div>
+              <div><label>Contato</label><input id="fnContato" value="${esc(f.contato || "")}" /></div>
+            </div>
+            <div class="actions">
+              ${f.id ? '<button class="btn-no" id="fnDel" style="margin-right:auto">Excluir</button>' : ""}
+              <button class="btn-ghost" id="fnCancel">Cancelar</button><button class="btn-pri" id="fnSave">Salvar</button>
+            </div>
+          </div>`);
+        $("#fnCancel").addEventListener("click", closeModal);
+        $("#fnSave").addEventListener("click", async () => {
+          if (!$("#fnNome").value.trim()) { toast("Nome é obrigatório.", "error"); return; }
+          try {
+            await rpc("wl_admin_upsert_fornecedor", {
+              p_id: f.id || null, p_nome: $("#fnNome").value.trim(), p_tipo: $("#fnTipo").value, p_cnpj: $("#fnCnpj").value.trim() || null,
+              p_contato: $("#fnContato").value.trim() || null,
+            });
+            toast("Fornecedor salvo.", "success"); closeModal(); viewFornecedores();
+          } catch (e) { toast(e.message, "error"); }
+        });
+        if (f.id) $("#fnDel").addEventListener("click", async () => {
+          if (!(await confirmDialog(`Excluir o fornecedor "${f.nome}"?`))) return;
+          try { await rpc("wl_admin_delete_fornecedor", { p_id: f.id }); toast("Fornecedor excluído.", "success"); closeModal(); viewFornecedores(); } catch (e) { toast(e.message, "error"); }
+        });
+      }
+
+      /* ================= VIEW: PLANOS ================= */
+      async function viewPlanos() {
+        const rows = await rpc("wl_list_planos", { p_limit: 50 });
+        const c = $("#content");
+        c.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Relatório</th><th>Competência</th><th>Limite</th><th class="num">Itens</th><th class="num">Alto</th><th class="num">Médio</th><th class="num">Baixo</th><th>Status</th><th>Processado em</th><th></th></tr></thead>
+          <tbody>${rows.length ? rows.map((p) => `<tr>
+            <td><strong>${esc(p.label)}</strong></td><td>${fmtDate(p.competencia)}</td><td>${fmtDate(p.data_limite)}</td>
+            <td class="num">${p.total_itens || 0}</td><td class="num danger-cell">${p.risco_alto || 0}</td><td class="num">${p.risco_medio || 0}</td><td class="num">${p.risco_baixo || 0}</td>
+            <td><span class="pill">${esc(p.status)}</span></td><td>${fmtDate(p.finished_at || p.created_at)}</td>
+            <td><button class="btn-ghost btn-sm" data-open="${p.id}">Abrir</button>${isAdmin ? `<button class="btn-ghost btn-sm" data-re="${p.id}">Reanalisar</button>` : ""}</td>
+          </tr>`).join("") : `<tr><td colspan="10" class="empty">Nenhum relatório processado ainda.</td></tr>`}</tbody></table></div>`;
+        c.querySelectorAll("button[data-open]").forEach((b) => b.addEventListener("click", () => { curPlano = b.dataset.open; navTo("necessidades"); }));
+        c.querySelectorAll("button[data-re]").forEach((b) => b.addEventListener("click", async () => {
+          b.disabled = true; b.textContent = "…";
+          try { await rpc("wl_analisar_plano", { p_plano_id: b.dataset.re }); toast("Relatório reanalisado.", "success"); viewPlanos(); } catch (e) { toast(e.message, "error"); b.disabled = false; b.textContent = "Reanalisar"; }
+        }));
+      }
+
+      /* ================= VIEW: DOCUMENTOS (RAG) ================= */
+      // Data/hora amigável (o webhook devolve ISO com hora).
+      function fmtDateTime(s) {
+        if (!s) return "—";
+        const d = new Date(s);
+        return isNaN(d) ? "—" : d.toLocaleString("pt-BR");
+      }
+      // Badge de origem: arquivado no Drive x upload direto.
+      function ragSourceBadge(d) {
+        const hasDrive = (d.url && /drive\.google\.com/i.test(d.url)) || d.source === "drive";
+        const txt = hasDrive ? "Google Drive" : (d.source === "chat" ? "Chat" : "Upload direto");
+        const bg = hasDrive ? "var(--accent, #6d28d9)" : (d.source === "chat" ? "#0e7490" : "var(--pri, #2563eb)");
+        return `<span style="background:${bg};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${txt}</span>`;
+      }
+      // Extrai recursivamente o array de docs de qualquer formato que o n8n devolva
+      // ([{docs:[]}], {docs:[]}, [ {...} ], double-encoded, etc.).
+      function extractDocs(parsed) {
+        const looksLikeDoc = (o) => o && typeof o === "object" && !Array.isArray(o) && ("id" in o || "title" in o || "file_id" in o);
+        const find = (v, depth = 0) => {
+          if (depth > 6 || v == null) return null;
+          if (Array.isArray(v)) {
+            if (v.length === 0) return v;
+            if (v.every(looksLikeDoc)) return v;
+            for (const item of v) { const f = find(item, depth + 1); if (f) return f; }
+            return null;
+          }
+          if (typeof v === "object") {
+            for (const key of ["docs", "data", "json", "body", "result", "items"]) {
+              if (key in v) { const f = find(v[key], depth + 1); if (f) return f; }
+            }
+            for (const key of Object.keys(v)) { const f = find(v[key], depth + 1); if (f) return f; }
+          }
+          return null;
+        };
+        return find(parsed) || [];
+      }
+      async function viewDocumentos() {
+        const c = $("#content");
+        let rows = [];
+        try {
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-docs`);
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const text = (await r.text()).trim();
+          let parsed = text ? JSON.parse(text) : [];
+          // Defensivo: resposta double-encoded (string JSON dentro de string).
+          for (let i = 0; i < 3 && typeof parsed === "string"; i++) {
+            try { parsed = JSON.parse(parsed); } catch (_) { break; }
+          }
+          rows = extractDocs(parsed);
+          // RAG global: oculta anexos de chat (com session_id) — só documentos globais aqui.
+          rows = rows.filter((d) => !d.session_id);
+        } catch (err) { toast("Erro ao listar documentos: " + err.message, "error"); }
+        c.innerHTML = `
+          <div class="toolbar"><span class="muted grow">Base de conhecimento global do copiloto — todos têm acesso (políticas, contratos, históricos). <strong>${rows.length}</strong> documento(s).</span>
+            <button class="btn-ghost btn-sm" id="docRefresh"><i data-lucide="refresh-cw"></i> Atualizar</button>
+            ${isAdmin ? '<input type="file" id="docFile" class="hidden" /><button class="btn-ghost btn-sm" id="docPurge"><i data-lucide="trash-2"></i> Limpar base</button><button class="btn-pri btn-sm" id="docUp"><i data-lucide="upload"></i> Enviar documento</button>' : ""}</div>
+          <div class="table-wrap"><table><thead><tr><th>Título</th><th>Origem</th><th class="num">Trechos</th><th>Atualizado</th><th></th></tr></thead>
+          <tbody>${(rows && rows.length) ? rows.map((d) => {
+            const title = esc(d.title || d.file_title || d.file_id || "Sem título");
+            const titleCell = d.url ? `<a href="${esc(d.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><strong>${title}</strong></a>` : `<strong>${title}</strong>`;
+            return `<tr>
+            <td>${titleCell}<div class="muted" style="font-size:11px">${esc(d.file_id || "")}</div></td>
+            <td>${ragSourceBadge(d)}</td>
+            <td class="num">${d.chunk_count ?? d.chunks ?? d.n_chunks ?? "—"}</td>
+            <td>${fmtDateTime(d.last_indexed_at || d.updated_at || d.created_at)}</td>
+            <td>${isAdmin ? `<button class="btn-ghost btn-sm" data-reindex="${esc(d.file_id)}"><i data-lucide="refresh-cw"></i> Reprocessar</button> <button class="btn-ghost btn-sm" data-del="${esc(d.file_id)}"><i data-lucide="trash-2"></i> Excluir</button>` : ""}</td>
+          </tr>`; }).join("") : `<tr><td colspan="5" class="empty">Nenhum documento na base. ${isAdmin ? "Clique em <strong>Enviar documento</strong> para indexar o primeiro." : ""}</td></tr>`}</tbody></table></div>`;
+        if (window.lucide) lucide.createIcons();
+        $("#docRefresh").addEventListener("click", viewDocumentos);
+        if (isAdmin) {
+          $("#docUp").addEventListener("click", () => $("#docFile").click());
+          $("#docFile").addEventListener("change", async (e) => {
+            const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+            toast("Enviando e indexando…");
+            try {
+              const fd = new FormData(); fd.append("data", f, f.name); fd.append("userId", ME.id);
+              const r = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-admin-upload`, { method: "POST", body: fd });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              toast("Documento indexado.", "success"); viewDocumentos();
+            } catch (err) { toast("Erro: " + err.message, "error"); }
+          });
+          $("#docPurge").addEventListener("click", async () => {
+            if (!(await confirmDialog("Limpar TODA a base de conhecimento? Esta ação não pode ser desfeita."))) return;
+            toast("Limpando base…");
+            try {
+              const r = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-purge-all`, { method: "POST" });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              toast("Base de conhecimento limpa.", "success"); viewDocumentos();
+            } catch (err) { toast("Erro: " + err.message, "error"); }
+          });
+          c.querySelectorAll("button[data-reindex]").forEach((b) => b.addEventListener("click", async () => {
+            if (!(await confirmDialog("Reprocessar este documento? O conteúdo será re-extraído do arquivo e os trechos reindexados."))) return;
+            toast("Reprocessando…");
+            try {
+              const r = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-reindex`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_id: b.dataset.reindex }) });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              toast("Reprocessamento iniciado.", "success");
+            } catch (e) { toast(e.message, "error"); }
+          }));
+          c.querySelectorAll("button[data-del]").forEach((b) => b.addEventListener("click", async () => {
+            if (!(await confirmDialog("Excluir este documento da base?"))) return;
+            try {
+              const r = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-doc-delete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_id: b.dataset.del }) });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              toast("Documento excluído.", "success"); viewDocumentos();
+            } catch (e) { toast(e.message, "error"); }
+          }));
+        }
+      }
+
+      /* ================= VIEW: USUÁRIOS ================= */
+      async function viewUsuarios() {
+        const rows = await rpc("wl_admin_list_users");
+        const c = $("#content");
+        c.innerHTML = `
+          <div class="toolbar"><span class="muted grow">${rows.length} usuários.</span><button class="btn-pri btn-sm" id="uNew"><i data-lucide="user-plus"></i> Cadastrar usuário</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Confirmado</th><th>Criado</th><th></th></tr></thead>
+          <tbody>${rows.map((u) => `<tr>
+            <td><strong>${esc(u.full_name || "—")}</strong></td><td>${esc(u.email)}</td>
+            <td><span class="pill">${u.role === "admin" ? "Administrador" : "Visualização"}</span></td>
+            <td>${u.confirmed ? '<span class="ok-cell">Sim</span>' : '<span class="danger-cell">Não</span>'}</td>
+            <td>${fmtDate(u.created_at)}</td>
+            <td><button class="btn-ghost btn-sm" data-edit='${esc(JSON.stringify(u))}'>Editar</button></td>
+          </tr>`).join("")}</tbody></table></div>`;
+        if (window.lucide) lucide.createIcons();
+        c.querySelectorAll("button[data-edit]").forEach((b) => b.addEventListener("click", () => openUserModal(JSON.parse(b.dataset.edit))));
+        $("#uNew").addEventListener("click", () => openUserModal(null));
+      }
+      function openUserModal(u) {
+        u = u || {};
+        openModal(`
+          <div class="mhead"><h3>${u.id ? "Editar usuário" : "Cadastrar usuário"}</h3><button class="close">✕</button></div>
+          <div class="body">
+            <div class="grid2">
+              <div><label>Nome</label><input id="uName" value="${esc(u.full_name || "")}" /></div>
+              <div><label>E-mail</label><input id="uEmail" type="email" value="${esc(u.email || "")}" ${u.id ? "readonly" : ""} /></div>
+              <div><label>Papel</label><select id="uRole"><option value="visualizacao" ${u.role === "visualizacao" ? "selected" : ""}>Visualização</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Administrador</option></select></div>
+              ${u.id ? "" : '<div><label>Senha inicial</label><input id="uPass" type="text" placeholder="mín. 6 caracteres" /></div>'}
+            </div>
+            <div class="actions">
+              ${u.id && u.id !== ME.id ? '<button class="btn-no" id="uDel" style="margin-right:auto">Excluir</button>' : ""}
+              <button class="btn-ghost" id="uCancel">Cancelar</button><button class="btn-pri" id="uSave">Salvar</button>
+            </div>
+            <div id="uStatus" class="muted" style="margin-top:8px"></div>
+          </div>`);
+        $("#uCancel").addEventListener("click", closeModal);
+        $("#uSave").addEventListener("click", async () => {
+          try {
+            if (u.id) {
+              await rpc("wl_admin_update_user", { p_user_id: u.id, p_full_name: $("#uName").value.trim() || null, p_role: $("#uRole").value });
+            } else {
+              const email = $("#uEmail").value.trim(), pass = $("#uPass").value;
+              if (!email || !pass) { toast("E-mail e senha são obrigatórios.", "error"); return; }
+              // cria via n8n (service_role) — endpoint admin
+              const r = await fetch(`${CONFIG.N8N_BASE}/welmy-admin-create-user`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password: pass, full_name: $("#uName").value.trim(), role: $("#uRole").value, requesterId: ME.id }),
+              });
+              if (!r.ok) throw new Error("HTTP " + r.status);
+            }
+            toast("Usuário salvo.", "success"); closeModal(); viewUsuarios();
+          } catch (e) { toast(e.message, "error"); }
+        });
+        if (u.id && u.id !== ME.id) $("#uDel").addEventListener("click", async () => {
+          if (!(await confirmDialog(`Excluir o usuário "${u.email}"?`))) return;
+          try { await rpc("wl_admin_delete_user", { p_user_id: u.id }); toast("Usuário excluído.", "success"); closeModal(); viewUsuarios(); } catch (e) { toast(e.message, "error"); }
+        });
+      }
+
+      /* ================= CHAT ================= */
+      const SUGGEST = ["Quais itens estão em risco alto?", "Quantos dias o estoque de M12 dura?", "Quais peças não chegam até o dia 25?", "Mostre o resumo do último relatório"];
+      function renderSuggest() { $("#suggest").innerHTML = SUGGEST.map((s) => `<button>${esc(s)}</button>`).join(""); $("#suggest").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { $("#chatInput").value = b.textContent; sendChat(); })); }
+      function renderChatEmpty() { $("#msgs").innerHTML = `<div class="empty">Olá! Sou o copiloto de Suprimentos &amp; PCP. Pergunte sobre necessidades, estoque, lead time ou risco de ruptura.</div>`; renderSuggest(); }
+      $("#chatFab").addEventListener("click", () => { $("#chatPanel").classList.add("open"); $("#chatFab").style.display = "none"; if (!$("#msgs").innerHTML.trim()) renderChatEmpty(); if (window.lucide) lucide.createIcons(); });
+      $("#closeChat").addEventListener("click", () => { $("#chatPanel").classList.remove("open"); $("#chatFab").style.display = "flex"; });
+      function newSessionId() { return "sess-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8); }
+      $("#newChat").addEventListener("click", () => { curSession = newSessionId(); renderChatEmpty(); $("#chatSessions").classList.add("hidden"); });
+      $("#histBtn").addEventListener("click", () => { const s = $("#chatSessions"); s.classList.toggle("hidden"); if (!s.classList.contains("hidden")) loadSessions(); });
+      async function loadSessions() {
+        try {
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-sessions?userId=${encodeURIComponent(ME.id)}`);
+          const arr = await safeJson(r);
+          const list = Array.isArray(arr) ? arr : [];
+          $("#chatSessions").innerHTML = list.length ? list.map((s) => `<div class="s" data-id="${esc(s.session_id || s.sessionId)}"><i data-lucide="message-square"></i><span class="grow">${esc((s.title || s.session_id || "").slice(0, 40))}</span></div>`).join("") : `<div class="empty" style="padding:16px">Sem conversas anteriores.</div>`;
+          if (window.lucide) lucide.createIcons();
+          $("#chatSessions").querySelectorAll(".s").forEach((d) => d.addEventListener("click", () => { openSession(d.dataset.id); $("#chatSessions").classList.add("hidden"); }));
+        } catch (e) { /* noop */ }
+      }
+      async function openSession(id) {
+        curSession = id;
+        try {
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-history?sessionId=${encodeURIComponent(id)}&userId=${encodeURIComponent(ME.id)}`);
+          const arr = await safeJson(r);
+          const msgs = (Array.isArray(arr) ? arr : []).map((m) => m.message).filter(Boolean);
+          $("#msgs").innerHTML = msgs.map((m) => { const type = m.type === "human" ? "u" : "a"; const c = stripCtx(m.content); return `<div class="msg ${type}">${type === "a" ? mdRender(c) : esc(c)}</div>`; }).join("") || '<div class="empty">Conversa vazia.</div>';
+          $("#msgs").scrollTop = $("#msgs").scrollHeight;
+        } catch (e) { /* noop */ }
+      }
+      async function sendChat() {
+        const t = $("#chatInput").value.trim();
+        if (!t) return;
+        if (!curSession) curSession = newSessionId();
+        if ($("#msgs").querySelector(".empty")) $("#msgs").innerHTML = "";
+        $("#suggest").innerHTML = "";
+        $("#msgs").appendChild(el("div", "msg u", esc(t)));
+        $("#chatInput").value = ""; $("#chatInput").style.height = "44px";
+        $("#msgs").scrollTop = $("#msgs").scrollHeight;
+        const thinking = el("div", "msg a", "…");
+        $("#msgs").appendChild(thinking); $("#msgs").scrollTop = $("#msgs").scrollHeight;
+        const ctx = pageContextLabel();
+        try {
+          const r = await fetch(`${CONFIG.N8N_BASE}/welmy-AgentRag`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: curSession, userId: ME.id, userName: ME.full_name, message: `[PÁGINA: ${ctx}] ${t}`, pageContext: ctx }),
+          });
+          const j = await safeJson(r);
+          thinking.innerHTML = mdRender((j && (j.output || j.text)) || "(sem resposta)");
+          refreshCurrentView();
+        } catch (e) { thinking.innerHTML = "Erro: " + esc(e.message); }
+        $("#msgs").scrollTop = $("#msgs").scrollHeight;
+      }
+      function autoGrowChatInput() { const i = $("#chatInput"); i.style.height = "auto"; i.style.height = Math.min(i.scrollHeight, 140) + "px"; }
+      $("#sendChat").addEventListener("click", sendChat);
+      $("#chatInput").addEventListener("input", autoGrowChatInput);
+      $("#chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+      $("#chatAttach").addEventListener("click", () => { if (!curSession) curSession = newSessionId(); $("#chatFileInput").click(); });
+      $("#chatFileInput").addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files); e.target.value = ""; if (!files.length) return;
+        if (!curSession) curSession = newSessionId();
+        if ($("#msgs").querySelector(".empty")) $("#msgs").innerHTML = "";
+        let tocouDados = false;
+        for (const file of files) {
+          const note = el("div", "msg a", `📎 Lendo “${esc(file.name)}”…`);
+          $("#msgs").appendChild(note); $("#msgs").scrollTop = $("#msgs").scrollHeight;
+          try {
+            // 1) tenta processar como relatório do ERP (Inventário/Necessidades) → atualiza o banco
+            const fd = new FormData(); fd.append("data", file, file.name); fd.append("userId", ME.id);
+            const r = await fetch(`${CONFIG.N8N_BASE}/welmy-relatorio`, { method: "POST", body: fd });
+            const j = r.ok ? await safeJson(r) : null;
+            if (j && j.tipo === "inventario") {
+              note.innerHTML = `📦 Inventário atualizado a partir de “${esc(file.name)}” (${j.atualizados || 0} itens). Pode perguntar sobre o estoque.`;
+              tocouDados = true;
+            } else if (j && j.tipo === "necessidades") {
+              if (j.plano_id) curPlano = j.plano_id;
+              note.innerHTML = `📋 Necessidades processadas de “${esc(file.name)}”${j.inseridos ? ` (${j.inseridos} itens)` : ""}. Pode pedir a análise de risco.`;
+              tocouDados = true;
+            } else {
+              // 2) não é um dos relatórios → indexa como documento de apoio da conversa (RAG)
+              const fd2 = new FormData(); fd2.append("data", file, file.name); fd2.append("session_id", curSession);
+              const r2 = await fetch(`${CONFIG.N8N_BASE}/welmy-rag-upload?sessionId=${encodeURIComponent(curSession)}`, { method: "POST", body: fd2 });
+              if (!r2.ok) throw new Error("HTTP " + r2.status);
+              note.innerHTML = `📎 “${esc(file.name)}” anexado a esta conversa.`;
+            }
+          } catch (err) { note.innerHTML = "Erro ao anexar: " + esc(err.message); }
+          $("#msgs").scrollTop = $("#msgs").scrollHeight;
+        }
+        if (tocouDados) refreshCurrentView();
+      });
+
+      /* ============ modal + toast ============ */
+      function openModal(html) {
+        const r = $("#modalRoot");
+        r.innerHTML = `<div class="modal-bg"><div class="modal">${html}</div></div>`;
+        r.querySelector(".modal-bg").onclick = (e) => { if (e.target.classList.contains("modal-bg")) closeModal(); };
+        const cl = r.querySelector(".close"); if (cl) cl.onclick = closeModal;
+        if (window.lucide) lucide.createIcons();
+      }
+      function closeModal() { $("#modalRoot").innerHTML = ""; }
+      function toast(msg, type) {
+        type = type || "info";
+        const icon = type === "success" ? "✓" : type === "error" ? "!" : "i";
+        const t = el("div", "toast " + type, `<span class="ti">${icon}</span><span class="tx">${esc(msg)}</span>`);
+        $("#toastRoot").appendChild(t);
+        requestAnimationFrame(() => t.classList.add("show"));
+        setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 300); }, 3500);
+      }
+      function confirmDialog(message, opts) {
+        opts = opts || {};
+        const okText = opts.okText || "Confirmar", cancelText = opts.cancelText || "Cancelar", danger = opts.danger !== false;
+        return new Promise((resolve) => {
+          openModal(`<div class="body">
+            <div class="confirm-ico ${danger ? "danger" : "ask"}">${danger ? "⚠" : "?"}</div>
+            <div class="confirm-msg">${esc(message)}</div>
+            <div class="confirm-actions"><button class="btn-ghost" id="cfNo">${esc(cancelText)}</button><button class="${danger ? "btn-no" : "btn-pri"}" id="cfYes">${esc(okText)}</button></div>
+          </div>`);
+          $("#modalRoot .modal").classList.add("confirm");
+          let done = false; const finish = (v) => { if (done) return; done = true; closeModal(); resolve(v); };
+          $("#cfYes").onclick = () => finish(true);
+          $("#cfNo").onclick = () => finish(false);
+          const bg = $("#modalRoot .modal-bg"); if (bg) bg.onclick = (e) => { if (e.target.classList.contains("modal-bg")) finish(false); };
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => { if (window.lucide) lucide.createIcons(); });
+    </script>
+  </body>
+</html>

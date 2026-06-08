@@ -1,0 +1,74 @@
+{
+  "name": "Welmy-AdminUser",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-admin-create-user",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "e1000001-0000-4000-8000-000000000001",
+      "name": "Webhook - Create User",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "welmy-admin-create-user"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Valida o payload de criação de usuário.\nconst b = $input.first().json || {};\nconst body = b.body || b;\nconst email = (body.email || '').toString().trim().toLowerCase();\nconst password = (body.password || '').toString();\nconst full_name = (body.full_name || '').toString().trim() || email;\nconst role = ['admin', 'visualizacao'].includes(body.role) ? body.role : 'visualizacao';\nif (!email) throw new Error('email is required');\nif (!password || password.length < 6) throw new Error('password must have at least 6 characters');\nreturn [{ json: { email, password, full_name, role } }];"
+      },
+      "id": "e1000001-0000-4000-8000-000000000002",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://REPLACE_ME_SUPABASE_HOST/auth/v1/admin/users",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "REPLACE_ME_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer REPLACE_ME_SERVICE_ROLE_KEY" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json.email, password: $json.password, email_confirm: true, user_metadata: { full_name: $json.full_name, company_name: 'welmy', role: $json.role } }) }}",
+        "options": {}
+      },
+      "id": "e1000001-0000-4000-8000-000000000003",
+      "name": "Create Auth User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, user_id: $json.id, email: $json.email } }}",
+        "options": {}
+      },
+      "id": "e1000001-0000-4000-8000-000000000004",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Webhook - Create User": { "main": [[{ "node": "Validate", "type": "main", "index": 0 }]] },
+    "Validate": { "main": [[{ "node": "Create Auth User", "type": "main", "index": 0 }]] },
+    "Create Auth User": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "id": "WelmyAdminUser",
+  "tags": []
+}

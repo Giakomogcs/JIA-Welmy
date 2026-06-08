@@ -1,0 +1,153 @@
+{
+  "name": "Welmy-Migrate-Planilha",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-migrate-planilha",
+        "responseMode": "responseNode",
+        "options": { "binaryData": true, "rawBody": false }
+      },
+      "id": "e0000001-0000-4000-8000-000000000001",
+      "name": "Receive Planilha",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-440, 0],
+      "webhookId": "welmy-migrate-planilha"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta se veio um arquivo (substituir a planilha no Drive) ou se é apenas um\n// SYNC: ler direto do Google Sheet conectado (mesmo id), sem upload. A interface\n// usa o sync para coletar SKUs/lead times da planilha conectada só com os PDFs.\nconst item = $input.first();\nconst bin = (item.binary && item.binary.data) || null;\nconst hasFile = !!(bin && (bin.fileName || bin.data));\nconst arquivo = hasFile ? (bin.fileName || 'Planilha mestre') : 'Planilha mestre (sync do Sheet conectado)';\nreturn [{ json: { hasFile, arquivo }, binary: item.binary }];"
+      },
+      "id": "e0000009-0000-4000-8000-000000000009",
+      "name": "Detect File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            { "id": "hf1", "leftValue": "={{ $json.hasFile }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e0000010-0000-4000-8000-000000000010",
+      "name": "Tem arquivo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": { "__rl": true, "value": "1zyhzgErwMMy0HPuhxQ_2q7p51MH8PFZuEdcH8wpSA_Q", "mode": "id" },
+        "changeFileContent": true,
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "e0000002-0000-4000-8000-000000000002",
+      "name": "Update Drive File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [220, -140],
+      "credentials": { "googleDriveOAuth2Api": { "id": "REPLACE_ME_GDRIVE_CRED", "name": "Google Drive account" } }
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1zyhzgErwMMy0HPuhxQ_2q7p51MH8PFZuEdcH8wpSA_Q", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "LEAD TIMES", "mode": "name" },
+        "options": { "dataLocationOnSheet": { "values": { "rangeDefinition": "detectAutomatically" } } }
+      },
+      "id": "e0000003-0000-4000-8000-000000000003",
+      "name": "Ler Aba Lead Times",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [220, 0],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REPLACE_ME_GSHEETS_CRED", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Colapsa a saída da aba LEAD TIMES para 1 item, para que a leitura da aba\n// de SKUs (próximo nó) execute uma única vez (e não 1x por linha de lead time).\n// Os dados de lead time continuam acessíveis via $('Ler Aba Lead Times').all().\nreturn [{ json: { ok: true } }];"
+      },
+      "id": "e0000004-0000-4000-8000-000000000004",
+      "name": "Coletar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1zyhzgErwMMy0HPuhxQ_2q7p51MH8PFZuEdcH8wpSA_Q", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "ANALISE DE SKUS", "mode": "name" },
+        "options": { "dataLocationOnSheet": { "values": { "rangeDefinition": "detectAutomatically" } } }
+      },
+      "id": "e0000005-0000-4000-8000-000000000005",
+      "name": "Ler Aba SKUs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [660, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REPLACE_ME_GSHEETS_CRED", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza as abas da planilha mestre para o REPLACE total do catálogo.\n//   - SKUs (aba 'ANALISE DE SKUS'): DESCRIÇÃO DO PRODUTO | CODIGO | CURVAS | MEDIA MENSAL | CONSUMO DIARIA ESTIMADO\n//   - Componentes (aba 'LEAD TIMES'): CODIGO | DESCRIÇÃO | UNIDADES | FABRICA/COMPRADO | FORNECEDOR | LEAD TIME DIAS\n// O lead time pode vir junto na aba de SKUs ou na aba LEAD TIMES (cruzado por código).\nconst pick = (o, keys) => {\n  for (const k of Object.keys(o)) {\n    const n = k.toString().trim().toLowerCase();\n    if (keys.some((t) => n.includes(t))) return o[k];\n  }\n  return undefined;\n};\nconst str = (v) => (v == null ? '' : v.toString().trim());\n\nconst skuItems = $('Ler Aba SKUs').all().map((i) => i.json);\nconst skus = skuItems\n  .map((o) => ({\n    codigo: str(pick(o, ['codigo', 'código'])),\n    descricao: str(pick(o, ['descri'])),\n    curva: str(pick(o, ['curva'])),\n    consumo_diario: pick(o, ['consumo']),\n    lead_time: pick(o, ['lead', 'prazo'])\n  }))\n  .filter((r) => r.codigo);\n\nlet ltItems = [];\ntry { ltItems = $('Ler Aba Lead Times').all().map((i) => i.json); } catch (e) { ltItems = []; }\nconst leadtimes = ltItems\n  .map((o) => ({\n    codigo: str(pick(o, ['codigo', 'código'])),\n    descricao: str(pick(o, ['descri'])),\n    unidade: str(pick(o, ['unidad', 'und'])),\n    grupo: str(pick(o, ['fabrica', 'comprado', 'f/c', 'f_c'])),\n    fornecedor: str(pick(o, ['fornecedor', 'forn'])),\n    lead_time: pick(o, ['lead', 'prazo', 'dias', 'tempo'])\n  }))\n  .filter((r) => r.codigo);\n\nconst arquivo = str($('Detect File').first().json.arquivo) || str($('Receive Planilha').first().json.body && $('Receive Planilha').first().json.body.arquivo) || 'Planilha mestre';\nreturn [{ json: { arquivo, skus, leadtimes, total_skus: skus.length, total_leadtimes: leadtimes.length } }];"
+      },
+      "id": "e0000006-0000-4000-8000-000000000006",
+      "name": "Build Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_replace_planilha_mestre($1, $2::jsonb, $3::jsonb) AS data;",
+        "options": { "queryReplacement": "={{ [$json.arquivo, JSON.stringify($json.skus), JSON.stringify($json.leadtimes)] }}" }
+      },
+      "id": "e0000007-0000-4000-8000-000000000007",
+      "name": "Replace Catálogo",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1100, 0],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"atualizados\": {{ $('Replace Catálogo').first().json.data.atualizados || 0 }}, \"criados\": {{ $('Replace Catálogo').first().json.data.criados || 0 }}, \"componentes\": {{ $('Replace Catálogo').first().json.data.componentes || 0 }}, \"removidos\": {{ $('Replace Catálogo').first().json.data.removidos || 0 }}, \"total\": {{ $('Replace Catálogo').first().json.data.total || 0 }} }",
+        "options": {}
+      },
+      "id": "e0000008-0000-4000-8000-000000000008",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 0]
+    }
+  ],
+  "connections": {
+    "Receive Planilha": { "main": [[{ "node": "Detect File", "type": "main", "index": 0 }]] },
+    "Detect File": { "main": [[{ "node": "Tem arquivo?", "type": "main", "index": 0 }]] },
+    "Tem arquivo?": { "main": [
+      [{ "node": "Update Drive File", "type": "main", "index": 0 }],
+      [{ "node": "Ler Aba Lead Times", "type": "main", "index": 0 }]
+    ] },
+    "Update Drive File": { "main": [[{ "node": "Ler Aba Lead Times", "type": "main", "index": 0 }]] },
+    "Ler Aba Lead Times": { "main": [[{ "node": "Coletar", "type": "main", "index": 0 }]] },
+    "Coletar": { "main": [[{ "node": "Ler Aba SKUs", "type": "main", "index": 0 }]] },
+    "Ler Aba SKUs": { "main": [[{ "node": "Build Rows", "type": "main", "index": 0 }]] },
+    "Build Rows": { "main": [[{ "node": "Replace Catálogo", "type": "main", "index": 0 }]] },
+    "Replace Catálogo": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "id": "WelmyMigratePlanilha",
+  "tags": []
+}

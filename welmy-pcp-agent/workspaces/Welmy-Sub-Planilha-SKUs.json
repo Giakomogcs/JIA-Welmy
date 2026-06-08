@@ -1,0 +1,113 @@
+{
+  "name": "Welmy-Sub-Planilha-SKUs",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🛠️ Consulta inteligente da planilha de SKUs / Part Numbers\n\n**Estrutura da planilha (Google Sheets):**\n- **Aba 01** — SKUs dos produtos (código + descrição) com o **consumo diário médio**.\n- **Aba 02** — **Lead times** dos itens relacionados aos SKUs.\n- **Abas 03–60** — cada aba é **um SKU específico** com seus **Part Numbers** detalhados.\n\n**Como o agente usa (2 passos):**\n1. Sem `nome_do_separador` → o fluxo devolve a **lista de abas** disponíveis.\n2. Com `nome_do_separador` → abre a aba e devolve as linhas; se houver `termo_de_pesquisa` (código SKU, part number ou descrição), filtra.\n\n**Configurar:** no nó *Google Sheets* e *Listar Abas API*, defina a credencial e troque `REPLACE_ME_SHEET_ID` pelo ID da planilha.",
+        "height": 300,
+        "width": 680,
+        "color": 6
+      },
+      "id": "b0000001-0000-4000-8000-000000000001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-48, -32]
+    },
+    {
+      "parameters": {},
+      "id": "b0000001-0000-4000-8000-000000000002",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [-64, 448]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "id": "cond-aba",
+              "leftValue": "={{ $json.nome_do_separador }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "b0000001-0000-4000-8000-000000000003",
+      "name": "Tem nome da aba?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [160, 448]
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "REPLACE_ME_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "={{ $json.nome_do_separador }}", "mode": "name" },
+        "options": {}
+      },
+      "id": "b0000001-0000-4000-8000-000000000004",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [416, 304],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REPLACE_ME_GSHEETS_CRED", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/REPLACE_ME_SHEET_ID?fields=sheets.properties.title",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Accept", "value": "application/json" } ] },
+        "options": {}
+      },
+      "id": "b0000001-0000-4000-8000-000000000005",
+      "name": "Listar Abas API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [416, 592],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REPLACE_ME_GSHEETS_CRED", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Devolve a lista de abas para o Agente escolher.\n// Aba 01 = SKUs + consumo diário; Aba 02 = lead times; Abas 03-60 = part numbers por SKU.\nconst abas = ($input.first().json.sheets || []).map(s => s.properties.title);\nreturn [{\n  json: {\n    aviso_para_a_ia: \"Você não informou o nome da aba. Estas são as abas disponíveis. Chame a ferramenta de novo passando um destes nomes em 'nome_do_separador'. Lembre: a primeira aba traz os SKUs e o consumo diário médio; a segunda traz os lead times; as demais (uma por SKU) trazem os part numbers detalhados.\",\n    abas_disponiveis: abas\n  }\n}];"
+      },
+      "id": "b0000001-0000-4000-8000-000000000006",
+      "name": "Formatar Lista de Abas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 592]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtra as linhas da aba pelo termo enviado pelo Agente (código SKU, part number ou descrição).\nconst trigger = $('Execute Workflow Trigger').first().json;\nconst termoBusca = (trigger.termo_de_pesquisa || '').toLowerCase().trim();\n\n// Termos genéricos que a IA costuma inventar: ignoramos o filtro e devolvemos amostra.\nconst termosGenericos = ['todos', 'todas', 'tudo', 'geral', 'analise', 'análise', 'relatorio', 'relatório', 'lista', 'listar'];\n\nif (!termoBusca || termosGenericos.includes(termoBusca)) {\n  // Sem filtro útil: devolve até 200 linhas da aba para a IA analisar.\n  return $input.all().slice(0, 200);\n}\n\nconst resultados = [];\nfor (const item of $input.all()) {\n  const linhaTexto = JSON.stringify(item.json).toLowerCase();\n  if (linhaTexto.includes(termoBusca)) resultados.push(item);\n}\n\n// Devolve no máximo 100 correspondências.\nreturn resultados.slice(0, 100);"
+      },
+      "id": "b0000001-0000-4000-8000-000000000007",
+      "name": "Filtrar Resultados para a IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 304]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": { "main": [[{ "node": "Tem nome da aba?", "type": "main", "index": 0 }]] },
+    "Tem nome da aba?": {
+      "main": [
+        [{ "node": "Google Sheets", "type": "main", "index": 0 }],
+        [{ "node": "Listar Abas API", "type": "main", "index": 0 }]
+      ]
+    },
+    "Google Sheets": { "main": [[{ "node": "Filtrar Resultados para a IA", "type": "main", "index": 0 }]] },
+    "Listar Abas API": { "main": [[{ "node": "Formatar Lista de Abas", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "id": "WelmySubPlanilhaSKUs",
+  "tags": []
+}

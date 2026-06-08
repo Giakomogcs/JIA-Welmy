@@ -1,0 +1,228 @@
+{
+  "name": "Welmy-RAG-Admin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "welmy-rag-docs",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "a1000001-0000-4000-8000-000000000001",
+      "name": "WH List Docs",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, -200],
+      "webhookId": "welmy-rag-docs-list"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  m.file_id              AS id,\n  m.file_id,\n  m.title,\n  m.code,\n  m.url,\n  m.source,\n  m.mime_type,\n  COALESCE((SELECT COUNT(*) FROM wl_documents d WHERE d.metadata->>'file_id' = m.file_id), 0) AS chunk_count,\n  m.created_at,\n  m.updated_at AS last_indexed_at\nFROM wl_document_metadata m\nORDER BY COALESCE(m.code, m.title, m.file_id);",
+        "options": {}
+      },
+      "id": "a1000001-0000-4000-8000-000000000002",
+      "name": "List Docs from DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [420, -200],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Embrulha como { docs: [...] } para o front extrair de forma estável.\nconst docs = $input.all().map((i) => i.json);\nreturn [{ json: { docs } }];"
+      },
+      "id": "a1000001-0000-4000-8000-000000000003",
+      "name": "Wrap Docs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, -200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "a1000001-0000-4000-8000-000000000004",
+      "name": "Respond Docs",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [820, -200]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-rag-doc-delete",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "a1000002-0000-4000-8000-000000000001",
+      "name": "WH Delete Doc",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 0],
+      "webhookId": "welmy-rag-doc-delete"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aceita file_id pelo body, query string ou `id`.\nconst b = $input.first().json || {};\nconst body = b.body || b;\nconst q = b.query || {};\nconst fileId = body.file_id || body.id || q.file_id || q.id;\nif (!fileId) throw new Error('file_id is required');\nreturn [{ json: { fileId } }];"
+      },
+      "id": "a1000002-0000-4000-8000-000000000002",
+      "name": "Extract file_id (delete)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_rag_purge_file($1);\nDELETE FROM wl_document_metadata WHERE file_id = $1 RETURNING file_id AS deleted_file_id;",
+        "options": { "queryReplacement": "={{ [$json.fileId] }}" }
+      },
+      "id": "a1000002-0000-4000-8000-000000000003",
+      "name": "Delete Doc from DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [640, 0],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'ok', deleted: ($json.deleted_file_id || null) } }}",
+        "options": {}
+      },
+      "id": "a1000002-0000-4000-8000-000000000004",
+      "name": "Respond Delete",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [860, 0]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-rag-purge-all",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "a1000003-0000-4000-8000-000000000001",
+      "name": "WH Purge All",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 200],
+      "webhookId": "welmy-rag-purge-all"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE wl_documents RESTART IDENTITY;\nTRUNCATE TABLE wl_document_rows RESTART IDENTITY;\nTRUNCATE TABLE wl_document_metadata RESTART IDENTITY CASCADE;\nSELECT 'ok' AS status;",
+        "options": {}
+      },
+      "id": "a1000003-0000-4000-8000-000000000002",
+      "name": "Purge All RAG Tables",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [420, 200],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'success', message: 'Base RAG limpa.' } }}",
+        "options": {}
+      },
+      "id": "a1000003-0000-4000-8000-000000000003",
+      "name": "Respond Purge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 200]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welmy-rag-upsert",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "a1000004-0000-4000-8000-000000000001",
+      "name": "WH Upsert Metadata",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "welmy-rag-upsert"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza o payload do front (JSON com file_id/title/code/url/source/mime_type/schema).\nconst b = $input.first().json || {};\nconst body = b.body || b;\nconst payload = {\n  file_id:   body.file_id || body.id,\n  title:     body.title || body.file_id || 'Sem título',\n  code:      body.code || null,\n  url:       body.url || null,\n  source:    body.source || 'upload',\n  mime_type: body.mime_type || null,\n  schema:    body.schema ? JSON.stringify(body.schema) : null\n};\nif (!payload.file_id) throw new Error('file_id is required');\nreturn [{ json: payload }];"
+      },
+      "id": "a1000004-0000-4000-8000-000000000002",
+      "name": "Normalize Upsert Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT wl_rag_upsert_metadata($1, $2, $3, $4, $5, $6, $7::jsonb) AS ok;",
+        "options": { "queryReplacement": "={{ [$json.file_id, $json.title, $json.code, $json.url, $json.source, $json.mime_type, $json.schema] }}" }
+      },
+      "id": "a1000004-0000-4000-8000-000000000003",
+      "name": "Upsert Metadata RPC",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [640, 400],
+      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'ok', file_id: $('Normalize Upsert Payload').first().json.file_id } }}",
+        "options": {}
+      },
+      "id": "a1000004-0000-4000-8000-000000000004",
+      "name": "Respond Upsert",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [860, 400]
+    },
+
+    {
+      "parameters": {
+        "content": "## Welmy — RAG Admin API\n\nQuatro webhooks usados pela tela **Documentos (RAG)** do front.\nRAG **global** (sem categorias/equipes).\n\n| Método | Path | O que faz |\n|---|---|---|\n| GET | `/welmy-rag-docs` | Lista documentos do RAG + contagem de chunks |\n| POST | `/welmy-rag-doc-delete` | Remove um documento (chunks + rows + metadata) por `file_id` |\n| POST | `/welmy-rag-purge-all` | Limpa toda a base (`wl_documents`, `wl_document_rows`, `wl_document_metadata`) |\n| POST | `/welmy-rag-upsert` | Insere/atualiza `wl_document_metadata` via `wl_rag_upsert_metadata()` |\n\nA camada de DB já existe na migration **002_rag_schema.sql**.\nQueries são **parametrizadas** (sem interpolação de string → sem SQL injection).\nO upload do arquivo continua no workflow **Welmy-RAG** (`/welmy-rag-admin-upload`).\nAutorização (admin) é feita no front via Supabase Auth.",
+        "height": 360,
+        "width": 480
+      },
+      "id": "a1000099-0000-4000-8000-000000000001",
+      "name": "Sticky Note - Docs",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-320, -200]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WH List Docs": { "main": [[{ "node": "List Docs from DB", "type": "main", "index": 0 }]] },
+    "List Docs from DB": { "main": [[{ "node": "Wrap Docs", "type": "main", "index": 0 }]] },
+    "Wrap Docs": { "main": [[{ "node": "Respond Docs", "type": "main", "index": 0 }]] },
+
+    "WH Delete Doc": { "main": [[{ "node": "Extract file_id (delete)", "type": "main", "index": 0 }]] },
+    "Extract file_id (delete)": { "main": [[{ "node": "Delete Doc from DB", "type": "main", "index": 0 }]] },
+    "Delete Doc from DB": { "main": [[{ "node": "Respond Delete", "type": "main", "index": 0 }]] },
+
+    "WH Purge All": { "main": [[{ "node": "Purge All RAG Tables", "type": "main", "index": 0 }]] },
+    "Purge All RAG Tables": { "main": [[{ "node": "Respond Purge", "type": "main", "index": 0 }]] },
+
+    "WH Upsert Metadata": { "main": [[{ "node": "Normalize Upsert Payload", "type": "main", "index": 0 }]] },
+    "Normalize Upsert Payload": { "main": [[{ "node": "Upsert Metadata RPC", "type": "main", "index": 0 }]] },
+    "Upsert Metadata RPC": { "main": [[{ "node": "Respond Upsert", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "id": "WelmyRAGAdmin",
+  "tags": []
+}
