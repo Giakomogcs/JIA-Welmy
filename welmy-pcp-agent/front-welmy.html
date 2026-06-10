@@ -264,13 +264,18 @@
       /* ===== Chat widget ===== */
       #chatFab { position: fixed; right: 22px; bottom: 22px; z-index: 50; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--pri), var(--pri2)); color: #fff; box-shadow: 0 8px 24px rgba(15,79,176,.45); display: flex; align-items: center; justify-content: center; }
       #chatFab svg { width: 24px; height: 24px; }
-      #chatPanel { position: fixed; right: 22px; bottom: 22px; z-index: 55; width: 410px; max-width: 94vw; height: 620px; max-height: 86vh; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgba(8,30,70,.4); display: none; flex-direction: column; overflow: hidden; }
+      #chatPanel { position: fixed; right: 22px; bottom: 22px; z-index: 18; width: 410px; max-width: 94vw; height: 620px; max-height: 86vh; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgba(8,30,70,.4); display: none; flex-direction: column; overflow: hidden; transition: width .18s ease, height .18s ease; }
       #chatPanel.open { display: flex; }
+      /* expandido: ocupa a área útil sem cobrir topbar nem sidebar */
+      #chatPanel.expanded { left: calc(var(--sidebar-width) + 18px); right: 18px; top: 78px; bottom: 18px; width: auto; height: auto; max-width: none; max-height: none; }
+      @media (max-width: 960px) { #chatPanel.expanded { left: 10px; right: 10px; top: 70px; bottom: 10px; } }
       .chat-head { background: linear-gradient(135deg, var(--brand1), var(--brand2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
       .chat-head .t { font-weight: 700; }
       .chat-head .t small { display: block; font-weight: 500; font-size: 11px; color: #cbdcf6; }
       .chat-head button { background: rgba(255,255,255,.14); color: #fff; padding: 5px 9px; border-radius: 8px; font-size: 12px; }
       .chat-head .x { margin-left: auto; }
+      .chat-head .win { padding: 5px 8px; display: inline-flex; align-items: center; }
+      .chat-head .win svg { width: 14px; height: 14px; }
       #chatSessions { border-bottom: 1px solid var(--line); max-height: 160px; overflow: auto; background: #fafbfe; }
       #chatSessions .s { padding: 9px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; cursor: pointer; font-size: 12.5px; }
       #chatSessions .s:hover { background: var(--pri-soft); }
@@ -279,8 +284,15 @@
       .msg.u { align-self: flex-end; background: var(--pri); color: #fff; border-bottom-right-radius: 4px; }
       .msg.a { align-self: flex-start; background: #f1f4f9; color: var(--txt); border-bottom-left-radius: 4px; }
       .msg.a code { background: #e2e8f3; padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+      /* tabelas grandes: balão ocupa toda a largura e a tabela rola na horizontal */
+      .msg.a:has(table) { max-width: 100%; align-self: stretch; }
+      .msg.a .tbl-wrap { overflow-x: auto; margin: 8px 0; border: 1px solid var(--line); border-radius: 9px; background: #fff; max-width: 100%; }
+      .msg.a .tbl-wrap table { margin: 0; width: 100%; border-collapse: collapse; white-space: nowrap; }
       .msg.a table { font-size: 12px; margin: 6px 0; }
-      .msg.a th, .msg.a td { padding: 4px 7px; }
+      .msg.a th, .msg.a td { padding: 6px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+      .msg.a thead th { position: sticky; top: 0; background: #f6f8fc; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--mut); }
+      .msg.a tbody tr:last-child td { border-bottom: 0; }
+      .msg.a tbody tr:nth-child(even) { background: #fafbfe; }
       .chat-input { border-top: 1px solid var(--line); padding: 10px; display: flex; gap: 8px; align-items: flex-end; }
       .chat-input textarea { resize: none; height: 44px; max-height: 140px; }
       .chat-input button { flex-shrink: 0; }
@@ -364,6 +376,7 @@
         <div class="t">Copiloto Welmy<small id="chatCtx">Suprimentos &amp; PCP</small></div>
         <button id="newChat" title="Nova conversa">+ Novo</button>
         <button id="histBtn" title="Histórico">Histórico</button>
+        <button class="win" id="expandChat" title="Expandir"><i data-lucide="maximize-2"></i></button>
         <button class="x" id="closeChat">✕</button>
       </div>
       <div id="chatSessions" class="hidden"></div>
@@ -466,7 +479,7 @@
       const fmtDate = (s) => { if (!s) return "—"; const d = new Date(s + (String(s).length === 10 ? "T00:00:00" : "")); return isNaN(d) ? "—" : d.toLocaleDateString("pt-BR"); };
       const fmtNum = (v, d = 0) => { const n = Number(v); return !isFinite(n) ? "—" : n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }); };
       const safeJson = async (r) => { const t = await r.text(); if (!t || !t.trim()) return null; try { return JSON.parse(t); } catch (_) { return null; } };
-      const stripCtx = (s) => (s == null ? "" : String(s)).replace(/^\s*\[(?:CONTEXTO|P\u00c1GINA|PAGINA)[^\]]*\]\s*/i, "");
+      const stripCtx = (s) => (s == null ? "" : String(s)).replace(/^(?:\s*\[(?:CONTEXTO|P\u00c1GINA|PAGINA)[^\]]*\]\s*)+/i, "");
 
       async function rpc(fn, args) {
         const { data, error } = await sb.rpc(fn, args || {});
@@ -497,8 +510,8 @@
             while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
               rows.push(lines[i].trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim())); i++;
             }
-            html += "<table><thead><tr>" + header.map((h) => `<th>${mdInline(h)}</th>`).join("") + "</tr></thead><tbody>" +
-              rows.map((r) => "<tr>" + r.map((c) => `<td>${mdInline(c)}</td>`).join("") + "</tr>").join("") + "</tbody></table>";
+            html += "<div class=\"tbl-wrap\"><table><thead><tr>" + header.map((h) => `<th>${mdInline(h)}</th>`).join("") + "</tr></thead><tbody>" +
+              rows.map((r) => "<tr>" + r.map((c) => `<td>${mdInline(c)}</td>`).join("") + "</tr>").join("") + "</tbody></table></div>";
             continue;
           }
           if (/^\s*[-*]\s+/.test(line)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${mdInline(line.replace(/^\s*[-*]\s+/, ""))}</li>`; i++; continue; }
@@ -1521,8 +1534,20 @@
       const SUGGEST = ["Quais itens estão em risco alto?", "Quantos dias o estoque de M12 dura?", "Quais peças não chegam até o dia 25?", "Mostre o resumo do último relatório"];
       function renderSuggest() { $("#suggest").innerHTML = SUGGEST.map((s) => `<button>${esc(s)}</button>`).join(""); $("#suggest").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { $("#chatInput").value = b.textContent; sendChat(); })); }
       function renderChatEmpty() { $("#msgs").innerHTML = `<div class="empty">Olá! Sou o copiloto de Suprimentos &amp; PCP. Pergunte sobre necessidades, estoque, lead time ou risco de ruptura.</div>`; renderSuggest(); }
-      $("#chatFab").addEventListener("click", () => { $("#chatPanel").classList.add("open"); $("#chatFab").style.display = "none"; if (!$("#msgs").innerHTML.trim()) renderChatEmpty(); if (window.lucide) lucide.createIcons(); });
-      $("#closeChat").addEventListener("click", () => { $("#chatPanel").classList.remove("open"); $("#chatFab").style.display = "flex"; });
+      $("#chatFab").addEventListener("click", () => { $("#chatPanel").classList.add("open"); $("#chatFab").style.display = "none"; if (!$("#msgs").innerHTML.trim()) renderChatEmpty(); else if (!$("#msgs").querySelector(".empty")) $("#suggest").innerHTML = ""; if (window.lucide) lucide.createIcons(); });
+      $("#closeChat").addEventListener("click", () => { $("#chatPanel").classList.remove("open", "expanded"); syncExpandBtn(); $("#chatFab").style.display = "flex"; });
+      function syncExpandBtn() {
+        const exp = $("#chatPanel").classList.contains("expanded");
+        const b = $("#expandChat");
+        b.title = exp ? "Minimizar" : "Expandir";
+        b.innerHTML = `<i data-lucide="${exp ? "minimize-2" : "maximize-2"}"></i>`;
+        if (window.lucide) lucide.createIcons();
+      }
+      $("#expandChat").addEventListener("click", () => {
+        $("#chatPanel").classList.toggle("expanded");
+        syncExpandBtn();
+        $("#msgs").scrollTop = $("#msgs").scrollHeight;
+      });
       function newSessionId() { return "sess-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8); }
       $("#newChat").addEventListener("click", () => { curSession = newSessionId(); renderChatEmpty(); $("#chatSessions").classList.add("hidden"); });
       $("#histBtn").addEventListener("click", () => { const s = $("#chatSessions"); s.classList.toggle("hidden"); if (!s.classList.contains("hidden")) loadSessions(); });
@@ -1531,13 +1556,14 @@
           const r = await fetch(`${CONFIG.N8N_BASE}/welmy-sessions?userId=${encodeURIComponent(ME.id)}`);
           const arr = await safeJson(r);
           const list = Array.isArray(arr) ? arr : [];
-          $("#chatSessions").innerHTML = list.length ? list.map((s) => `<div class="s" data-id="${esc(s.session_id || s.sessionId)}"><i data-lucide="message-square"></i><span class="grow">${esc((s.title || s.session_id || "").slice(0, 40))}</span></div>`).join("") : `<div class="empty" style="padding:16px">Sem conversas anteriores.</div>`;
+          $("#chatSessions").innerHTML = list.length ? list.map((s) => { const tt = stripCtx(s.titulo || s.title || "").trim() || "Conversa sem título"; return `<div class="s" data-id="${esc(s.session_id || s.sessionId)}" title="${esc(tt)}"><i data-lucide="message-square"></i><span class="grow">${esc(tt.slice(0, 48))}${tt.length > 48 ? "…" : ""}</span></div>`; }).join("") : `<div class="empty" style="padding:16px">Sem conversas anteriores.</div>`;
           if (window.lucide) lucide.createIcons();
           $("#chatSessions").querySelectorAll(".s").forEach((d) => d.addEventListener("click", () => { openSession(d.dataset.id); $("#chatSessions").classList.add("hidden"); }));
         } catch (e) { /* noop */ }
       }
       async function openSession(id) {
         curSession = id;
+        $("#suggest").innerHTML = "";
         try {
           const r = await fetch(`${CONFIG.N8N_BASE}/welmy-history?sessionId=${encodeURIComponent(id)}&userId=${encodeURIComponent(ME.id)}`);
           const arr = await safeJson(r);
@@ -1578,6 +1604,7 @@
         const files = Array.from(e.target.files); e.target.value = ""; if (!files.length) return;
         if (!curSession) curSession = newSessionId();
         if ($("#msgs").querySelector(".empty")) $("#msgs").innerHTML = "";
+        $("#suggest").innerHTML = "";
         let tocouDados = false;
         for (const file of files) {
           const note = el("div", "msg a", `📎 Lendo “${esc(file.name)}”…`);

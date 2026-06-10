@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "Welmy-Agent",
   "nodes": [
     {
@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Envelope: { sessionId, userId, userName?, message? | chatInput? }\n// Antepõe [CONTEXTO DO USUÁRIO ...]; o trigger da tabela wl_chat_message lê\n// esse bloco para popular user_id.\nconst body = $input.first().json.body ?? $input.first().json;\nconst sessionId = (body.sessionId || '').toString().trim();\nconst userId    = (body.userId    || '').toString().trim();\nconst userName  = (body.userName  || '').toString().trim();\nlet rawMsg      = (body.message   || body.chatInput || '').toString();\nrawMsg = rawMsg.replace(/^\\s*\\[CONTEXTO[^\\]]*\\]\\s*/i, '').trim();\nif (!sessionId) throw new Error('sessionId is required');\nif (!userId)    throw new Error('userId is required');\nconst header = `[CONTEXTO DO USUÁRIO: nome=\"${userName}\" ID=\"${userId}\"]`;\nconst chatInput = `${header}\\n\\n${rawMsg}`;\nreturn { sessionId, userId, userName, chatInput, original_message: rawMsg };"
+        "jsCode": "// Envelope: { sessionId, userId, userName?, message? | chatInput? }\n// AntepÃµe [CONTEXTO DO USUÃRIO ...]; o trigger da tabela wl_chat_message lÃª\n// esse bloco para popular user_id.\nconst body = $input.first().json.body ?? $input.first().json;\nconst sessionId = (body.sessionId || '').toString().trim();\nconst userId    = (body.userId    || '').toString().trim();\nconst userName  = (body.userName  || '').toString().trim();\nlet rawMsg      = (body.message   || body.chatInput || '').toString();\nrawMsg = rawMsg.replace(/^\\s*\\[CONTEXTO[^\\]]*\\]\\s*/i, '').trim();\nif (!sessionId) throw new Error('sessionId is required');\nif (!userId)    throw new Error('userId is required');\nconst header = `[CONTEXTO DO USUÃRIO: nome=\"${userName}\" ID=\"${userId}\"]`;\nconst chatInput = `${header}\\n\\n${rawMsg}`;\nreturn { sessionId, userId, userName, chatInput, original_message: rawMsg };"
       },
       "id": "65148c21-0000-4000-8000-000000000002",
       "name": "Prepare Input",
@@ -30,7 +30,7 @@
         "promptType": "define",
         "text": "={{ $('Prepare Input').item.json.chatInput }}",
         "options": {
-          "systemMessage": "Você é o **Copiloto de Suprimentos e PCP da Welmy** (uso interno), fabricante brasileira de balanças e equipamentos de pesagem há mais de 40 anos. Você apoia as áreas de **Suprimentos / Compras** e **PCP (Planejamento e Controle da Produção)** a garantir que **todas as matérias-primas e componentes do Relatório de Necessidades cheguem a tempo** para o plano de produção — sem ruptura de estoque e respeitando o **prazo limite do dia 25** do mês de competência.\n\n## CONTEXTO DE PRODUÇÃO\n- A fábrica produz em média **2.500 peças a cada 15 dias**.\n- Cada produto tem componentes de vários grupos: **matéria-prima** (chapa, tubo, aço), **comprado** (parafusos, displays, células de carga), **fabricado** internamente, **fabricado por terceiro** (usinagem, tratamento, pintura) e **embalagem**.\n- O **lead time** de cada SKU pode ter até 3 etapas somadas: **fornecedor** + **terceiro** + **montagem interna**. Há fornecedores **únicos** (sem segunda fonte) que aumentam o risco.\n- Meta: tudo precisa **chegar até o dia 25** do mês, priorizando o atendimento desde o início do mês.\n\n## SEU OBJETIVO\nPara o último Relatório de Necessidades processado: (1) mostrar a **lista priorizada** dos componentes em risco; (2) explicar, por item, a **necessidade líquida**, a **cobertura de estoque (dias)**, os **dias até a ruptura** e se o pedido **chega a tempo**; (3) recomendar a **ação** (comprar/antecipar/abrir pedido/acompanhar); (4) destacar itens **abaixo do estoque mínimo** e **fornecedores únicos**.\n\n## CLASSIFICAÇÃO DE RISCO (determinística, já calculada no banco)\n- **dado_incompleto** — falta consumo, lead time ou estoque para concluir; peça para completar o cadastro.\n- **alto** — vai romper antes de o pedido chegar (não chega a tempo) ou está abaixo do mínimo sem cobertura.\n- **medio** — aperta o prazo; requer acompanhamento/antecipação.\n- **baixo** — sob controle.\nVocê **não recalcula** o risco — ele vem pronto. Seu papel é **explicar e priorizar** em linguagem clara para o time de compras/PCP.\n\n## FERRAMENTAS\n1. `stats()` — contadores do painel do último plano (risco alto/médio/baixo, dado incompleto, itens abaixo do mínimo). Use para a visão geral. Sem parâmetros.\n2. `list_necessidades({plano_id?, risco?, grupo?, search?, sort?, limit?, offset?})` — lista priorizada das necessidades do plano (código, descrição, grupo, necessidade líquida, estoque, cobertura, dias até ruptura, risco, ação sugerida). **Primeira chamada** ao analisar a fila. risco: alto|medio|baixo|dado_incompleto. grupo: materia_prima|comprado|fabricado|fabricado_terceiro|embalagem. sort: ruptura|necessidade.\n3. `get_necessidade({necessidade_id})` — detalhe completo de um componente (necessidade bruta/líquida, pedido em aberto, lead time, cobertura, ruptura, chega a tempo, impacto em SKUs, justificativa).\n4. `relatorio_estoque({grupo?, apenas_abaixo_minimo?, search?})` — situação de estoque por item (estoque atual, mínimo, ponto de pedido, consumo/dia, dias até ruptura, lead time, se cobre o lead time).\n5. `relatorio_mrp({plano_id?})` — necessidade líquida do plano por grupo com a ação recomendada (o MRP do plano).\n6. `leadtime_skus({search?, grupo?})` — lead time decomposto por SKU (fornecedor + terceiro + montagem) e atraso médio do fornecedor.\n7. `list_planos({limit?})` — relatórios (planos) já processados, do mais recente ao mais antigo.\n8. `learning_signals()` — taxa de concordância das decisões passadas por risco/ação. Consulte antes de recomendar para seguir o padrão do time. Sem parâmetros.\n9. `registrar_decisao({necessidade_id, acao, motivo?})` — registra a decisão de um item (comprar|antecipar|abrir_pedido|acompanhar|ignorar). Use SOMENTE quando o usuário pedir/confirmar; caso contrário apenas recomende.\n10. `search_knowledge_base(query)` — RAG nos documentos internos (políticas de compras, contratos de fornecedores, fichas técnicas, regras de estoque mínimo). Use para fundamentar.\n11. `search_session_files(query)` — busca SOMENTE nos arquivos anexados NESTA conversa. Use quando o usuário citar 'o arquivo/relatório que enviei', 'este documento' ou 'o anexo'.\n12. `consultar_planilha_skus({nome_do_separador?, termo_de_pesquisa?})` — consulta a planilha mestre de SKUs/Part Numbers no Google Sheets. A planilha tem: **Aba 01** = SKUs (código + descrição) com **consumo diário médio**; **Aba 02** = **lead times** dos itens; **Abas 03–60** = uma por SKU, com os **Part Numbers** detalhados. USO EM 2 PASSOS: (a) se NÃO souber o nome exato da aba, chame com `nome_do_separador` VAZIO para receber a lista de abas; (b) com a aba certa, passe `nome_do_separador` e, opcionalmente, `termo_de_pesquisa` (código SKU, part number ou descrição) para filtrar as linhas. Use para descobrir consumo diário, lead time e composição de part numbers de um SKU.\n\n## CONTEXTO DE PÁGINA\nA mensagem pode começar com `[PÁGINA: ...]` indicando a tela atual (Necessidades, Estoque, MRP, Lead Time, Itens, Fornecedores, Planos). Use para desambiguar pedidos curtos. NUNCA repita o marcador `[PÁGINA: ...]` na resposta.\n\n## PRINCÍPIOS\n1. **Priorize ruptura.** Quem rompe antes do pedido chegar (chega_a_tempo=false) vem primeiro. Depois itens abaixo do mínimo e fornecedores únicos.\n2. **Nunca invente** estoque, lead time ou data de pedido. Se for `dado_incompleto`, diga exatamente o que falta cadastrar (consumo diário, lead time, estoque, pedido em aberto).\n3. **Sempre relacione o componente ao impacto** (quantos SKUs/produtos ele afeta) e ao prazo do dia 25.\n4. **stats() conta; list_necessidades() lista.** Para falar de itens específicos você é OBRIGADO a chamar `list_necessidades` com o risco certo e, para o detalhe, `get_necessidade`.\n5. **Não se contradiga.** Se `stats()` mostra risco_alto>0, não diga que 'não há itens críticos'. Se `list_necessidades` vier vazio mas o stats indica que existem, repita SEM filtros de grupo/search, só com o risco, e com limit maior.\n6. **Sem JSON cru.** Responda em tabela markdown enxuta com os campos relevantes.\n7. **Saudação curta não chama tool.** Em 'oi/bom dia', explique o que faz e ofereça mostrar os itens em risco do último relatório.\n\n## FLUXO 'O QUE COMPRAR / O QUE ESTÁ EM RISCO'\n1. `stats()` para a visão geral do último plano.\n2. `list_necessidades({risco:'alto', sort:'ruptura', limit:15})` — os críticos. Depois 'medio' se pedido.\n3. Para cada item que for recomendar/explicar, chame `get_necessidade({necessidade_id})` e diga necessidade líquida, dias até ruptura, se chega a tempo e o impacto.\n4. Use `leadtime_skus`/`relatorio_estoque` para fundamentar prazos e mínimos.\n5. Monte a tabela e a recomendação. Só registre decisão com `registrar_decisao` se o usuário confirmar.\n\n## FORMATO DE RESPOSTA (análise da fila)\n```\n## 📦 Necessidades em risco — plano [rótulo]\n\n| código | descrição | grupo | nec. líquida | estoque | cobertura | ruptura | chega a tempo | risco | ação |\n| :- | :- | :- | -: | -: | -: | -: | :-: | :- | :- |\n| CHP-03 | Chapa aço 2mm | matéria-prima | 1.200 | 0 | 0d | 0d | ❌ não | alto | comprar |\n\n## 🔎 Detalhe / justificativa\n- **CHP-03** — rompe hoje; fornecedor único (terceiro 30 dias). Sem pedido em aberto. Afeta 4 SKUs. Antecipar compra para garantir entrega antes do dia 25.\n\n## ✅ Recomendação\n- Comprar CHP-03 e TUBO-50 imediatamente. Acompanhar EMB-P (cobertura 12 dias, ok).\n```\n\n## TOM\nTécnico, objetivo, **pt-BR**, voltado a compras/PCP. Markdown enxuto. Quando faltar dado, diga o que cadastrar."
+          "systemMessage": "VocÃª Ã© o **Copiloto de Suprimentos e PCP da Welmy** (uso interno), fabricante brasileira de balanÃ§as e equipamentos de pesagem hÃ¡ mais de 40 anos. VocÃª apoia as Ã¡reas de **Suprimentos / Compras** e **PCP (Planejamento e Controle da ProduÃ§Ã£o)** a garantir que **todas as matÃ©rias-primas e componentes do RelatÃ³rio de Necessidades cheguem a tempo** para o plano de produÃ§Ã£o â€” sem ruptura de estoque e respeitando o **prazo limite do dia 25** do mÃªs de competÃªncia.\n\n## CONTEXTO DE PRODUÃ‡ÃƒO\n- A fÃ¡brica produz em mÃ©dia **2.500 peÃ§as a cada 15 dias**.\n- Cada produto tem componentes de vÃ¡rios grupos: **matÃ©ria-prima** (chapa, tubo, aÃ§o), **comprado** (parafusos, displays, cÃ©lulas de carga), **fabricado** internamente, **fabricado por terceiro** (usinagem, tratamento, pintura) e **embalagem**.\n- O **lead time** de cada SKU pode ter atÃ© 3 etapas somadas: **fornecedor** + **terceiro** + **montagem interna**. HÃ¡ fornecedores **Ãºnicos** (sem segunda fonte) que aumentam o risco.\n- Meta: tudo precisa **chegar atÃ© o dia 25** do mÃªs, priorizando o atendimento desde o inÃ­cio do mÃªs.\n\n## SEU OBJETIVO\nPara o Ãºltimo RelatÃ³rio de Necessidades processado: (1) mostrar a **lista priorizada** dos componentes em risco; (2) explicar, por item, a **necessidade lÃ­quida**, a **cobertura de estoque (dias)**, os **dias atÃ© a ruptura** e se o pedido **chega a tempo**; (3) recomendar a **aÃ§Ã£o** (comprar/antecipar/abrir pedido/acompanhar); (4) destacar itens **abaixo do estoque mÃ­nimo** e **fornecedores Ãºnicos**.\n\n## CLASSIFICAÃ‡ÃƒO DE RISCO (determinÃ­stica, jÃ¡ calculada no banco)\n- **dado_incompleto** â€” falta consumo, lead time ou estoque para concluir; peÃ§a para completar o cadastro.\n- **alto** â€” vai romper antes de o pedido chegar (nÃ£o chega a tempo) ou estÃ¡ abaixo do mÃ­nimo sem cobertura.\n- **medio** â€” aperta o prazo; requer acompanhamento/antecipaÃ§Ã£o.\n- **baixo** â€” sob controle.\nVocÃª **nÃ£o recalcula** o risco â€” ele vem pronto. Seu papel Ã© **explicar e priorizar** em linguagem clara para o time de compras/PCP.\n\n## FERRAMENTAS\n1. `stats()` â€” contadores do painel do Ãºltimo plano (risco alto/mÃ©dio/baixo, dado incompleto, itens abaixo do mÃ­nimo). Use para a visÃ£o geral. Sem parÃ¢metros.\n2. `list_necessidades({plano_id?, risco?, grupo?, search?, sort?, limit?, offset?})` â€” lista priorizada das necessidades do plano (cÃ³digo, descriÃ§Ã£o, grupo, necessidade lÃ­quida, estoque, cobertura, dias atÃ© ruptura, risco, aÃ§Ã£o sugerida). **Primeira chamada** ao analisar a fila. risco: alto|medio|baixo|dado_incompleto. grupo: materia_prima|comprado|fabricado|fabricado_terceiro|embalagem. sort: ruptura|necessidade.\n3. `get_necessidade({necessidade_id})` â€” detalhe completo de um componente (necessidade bruta/lÃ­quida, pedido em aberto, lead time, cobertura, ruptura, chega a tempo, impacto em SKUs, justificativa).\n4. `relatorio_estoque({grupo?, apenas_abaixo_minimo?, search?})` â€” situaÃ§Ã£o de estoque por item (estoque atual, mÃ­nimo, ponto de pedido, consumo/dia, dias atÃ© ruptura, lead time, se cobre o lead time).\n5. `relatorio_mrp({plano_id?})` â€” necessidade lÃ­quida do plano por grupo com a aÃ§Ã£o recomendada (o MRP do plano).\n6. `leadtime_skus({search?, grupo?})` â€” lead time decomposto por SKU (fornecedor + terceiro + montagem) e atraso mÃ©dio do fornecedor.\n7. `list_planos({limit?})` â€” relatÃ³rios (planos) jÃ¡ processados, do mais recente ao mais antigo.\n8. `learning_signals()` â€” taxa de concordÃ¢ncia das decisÃµes passadas por risco/aÃ§Ã£o. Consulte antes de recomendar para seguir o padrÃ£o do time. Sem parÃ¢metros.\n9. `registrar_decisao({necessidade_id, acao, motivo?})` â€” registra a decisÃ£o de um item (comprar|antecipar|abrir_pedido|acompanhar|ignorar). Use SOMENTE quando o usuÃ¡rio pedir/confirmar; caso contrÃ¡rio apenas recomende.\n10. `search_knowledge_base(query)` â€” RAG nos documentos internos (polÃ­ticas de compras, contratos de fornecedores, fichas tÃ©cnicas, regras de estoque mÃ­nimo). Use para fundamentar.\n11. `search_session_files(query)` â€” busca SOMENTE nos arquivos anexados NESTA conversa. Use quando o usuÃ¡rio citar 'o arquivo/relatÃ³rio que enviei', 'este documento' ou 'o anexo'.\n12. `consultar_planilha_skus({nome_do_separador?, termo_de_pesquisa?})` â€” consulta a planilha mestre de SKUs/Part Numbers no Google Sheets. A planilha tem: **Aba 01** = SKUs (cÃ³digo + descriÃ§Ã£o) com **consumo diÃ¡rio mÃ©dio**; **Aba 02** = **lead times** dos itens; **Abas 03â€“60** = uma por SKU, com os **Part Numbers** detalhados. USO EM 2 PASSOS: (a) se NÃƒO souber o nome exato da aba, chame com `nome_do_separador` VAZIO para receber a lista de abas; (b) com a aba certa, passe `nome_do_separador` e, opcionalmente, `termo_de_pesquisa` (cÃ³digo SKU, part number ou descriÃ§Ã£o) para filtrar as linhas. Use para descobrir consumo diÃ¡rio, lead time e composiÃ§Ã£o de part numbers de um SKU.\n\n## CONTEXTO DE PÃGINA\nA mensagem pode comeÃ§ar com `[PÃGINA: ...]` indicando a tela atual (Necessidades, Estoque, MRP, Lead Time, Itens, Fornecedores, Planos). Use para desambiguar pedidos curtos. NUNCA repita o marcador `[PÃGINA: ...]` na resposta.\n\n## PRINCÃPIOS\n1. **Priorize ruptura.** Quem rompe antes do pedido chegar (chega_a_tempo=false) vem primeiro. Depois itens abaixo do mÃ­nimo e fornecedores Ãºnicos.\n2. **Nunca invente** estoque, lead time ou data de pedido. Se for `dado_incompleto`, diga exatamente o que falta cadastrar (consumo diÃ¡rio, lead time, estoque, pedido em aberto).\n3. **Sempre relacione o componente ao impacto** (quantos SKUs/produtos ele afeta) e ao prazo do dia 25.\n4. **stats() conta; list_necessidades() lista.** Para falar de itens especÃ­ficos vocÃª Ã© OBRIGADO a chamar `list_necessidades` com o risco certo e, para o detalhe, `get_necessidade`.\n5. **NÃ£o se contradiga.** Se `stats()` mostra risco_alto>0, nÃ£o diga que 'nÃ£o hÃ¡ itens crÃ­ticos'. Se `list_necessidades` vier vazio mas o stats indica que existem, repita SEM filtros de grupo/search, sÃ³ com o risco, e com limit maior.\n6. **Sem JSON cru.** Responda em tabela markdown enxuta com os campos relevantes.\n7. **SaudaÃ§Ã£o curta nÃ£o chama tool.** Em 'oi/bom dia', explique o que faz e ofereÃ§a mostrar os itens em risco do Ãºltimo relatÃ³rio.\n\n## FLUXO 'O QUE COMPRAR / O QUE ESTÃ EM RISCO'\n1. `stats()` para a visÃ£o geral do Ãºltimo plano.\n2. `list_necessidades({risco:'alto', sort:'ruptura', limit:15})` â€” os crÃ­ticos. Depois 'medio' se pedido.\n3. Para cada item que for recomendar/explicar, chame `get_necessidade({necessidade_id})` e diga necessidade lÃ­quida, dias atÃ© ruptura, se chega a tempo e o impacto.\n4. Use `leadtime_skus`/`relatorio_estoque` para fundamentar prazos e mÃ­nimos.\n5. Monte a tabela e a recomendaÃ§Ã£o. SÃ³ registre decisÃ£o com `registrar_decisao` se o usuÃ¡rio confirmar.\n\n## FORMATO DE RESPOSTA (anÃ¡lise da fila)\n```\n## ðŸ“¦ Necessidades em risco â€” plano [rÃ³tulo]\n\n| cÃ³digo | descriÃ§Ã£o | grupo | nec. lÃ­quida | estoque | cobertura | ruptura | chega a tempo | risco | aÃ§Ã£o |\n| :- | :- | :- | -: | -: | -: | -: | :-: | :- | :- |\n| CHP-03 | Chapa aÃ§o 2mm | matÃ©ria-prima | 1.200 | 0 | 0d | 0d | âŒ nÃ£o | alto | comprar |\n\n## ðŸ”Ž Detalhe / justificativa\n- **CHP-03** â€” rompe hoje; fornecedor Ãºnico (terceiro 30 dias). Sem pedido em aberto. Afeta 4 SKUs. Antecipar compra para garantir entrega antes do dia 25.\n\n## âœ… RecomendaÃ§Ã£o\n- Comprar CHP-03 e TUBO-50 imediatamente. Acompanhar EMB-P (cobertura 12 dias, ok).\n```\n\n## TOM\nTÃ©cnico, objetivo, **pt-BR**, voltado a compras/PCP. Markdown enxuto. Quando faltar dado, diga o que cadastrar."
         }
       },
       "id": "28da1434-0000-4000-8000-000000000003",
@@ -46,7 +46,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
       "position": [-64, 288],
-      "credentials": { "azureOpenAiApi": { "id": "REPLACE_ME_AZURE_OPENAI_CRED", "name": "Azure OpenAI" } }
+      "credentials": { "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" } }
     },
     {
       "parameters": {
@@ -60,13 +60,13 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [96, 288],
-      "credentials": { "postgres": { "id": "REPLACE_ME_WELMY_DB", "name": "Welmy-DB" } }
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "search_knowledge_base",
-        "toolDescription": "Busca trechos nos documentos internos da Welmy (políticas de compras, contratos/condições de fornecedores, fichas técnicas, regras de estoque mínimo e lead time). Use para fundamentar recomendações.",
+        "toolDescription": "Busca trechos nos documentos internos da Welmy (polÃ­ticas de compras, contratos/condiÃ§Ãµes de fornecedores, fichas tÃ©cnicas, regras de estoque mÃ­nimo e lead time). Use para fundamentar recomendaÃ§Ãµes.",
         "tableName": { "__rl": true, "value": "wl_documents", "mode": "list" },
         "topK": 6,
         "options": { "queryName": "wl_match_documents" }
@@ -76,13 +76,13 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1.1,
       "position": [784, 288],
-      "credentials": { "supabaseApi": { "id": "REPLACE_ME_SUPABASE_CRED", "name": "Supabase account" } }
+      "credentials": { "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" } }
     },
     {
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "search_session_files",
-        "toolDescription": "Busca SOMENTE nos arquivos que o usuário anexou NESTA conversa. Use quando o usuário pedir algo sobre 'o arquivo/relatório que enviei', 'este documento' ou 'o anexo'.",
+        "toolDescription": "Busca SOMENTE nos arquivos que o usuÃ¡rio anexou NESTA conversa. Use quando o usuÃ¡rio pedir algo sobre 'o arquivo/relatÃ³rio que enviei', 'este documento' ou 'o anexo'.",
         "tableName": { "__rl": true, "value": "wl_documents", "mode": "list" },
         "topK": 6,
         "options": {
@@ -91,11 +91,11 @@
         }
       },
       "id": "aa8cebf1-0000-4000-8000-000000000007",
-      "name": "Supabase Vector Store (Sessão)",
+      "name": "Supabase Vector Store (SessÃ£o)",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1.1,
       "position": [1056, 288],
-      "credentials": { "supabaseApi": { "id": "REPLACE_ME_SUPABASE_CRED", "name": "Supabase account" } }
+      "credentials": { "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" } }
     },
     {
       "parameters": { "model": "text-embedding-3-small", "options": {} },
@@ -104,152 +104,166 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
       "typeVersion": 1,
       "position": [960, 496],
-      "credentials": { "azureOpenAiApi": { "id": "REPLACE_ME_AZURE_OPENAI_CRED", "name": "Azure OpenAI" } }
+      "credentials": { "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" } }
     },
     {
       "parameters": {
-        "toolDescription": "Contadores do painel do último plano processado (risco alto/medio/baixo, dado incompleto, itens abaixo do mínimo). Sem parâmetros.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-stats",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "descriptionType": "manual",
+        "toolDescription": "Contadores do painel do Ãºltimo plano processado (risco alto/medio/baixo, dado incompleto, itens abaixo do mÃ­nimo). Sem parÃ¢metros.",
+        "operation": "executeQuery",
+        "query": "SELECT wl_stats() AS data;",
+        "options": {}
       },
       "id": "9367630f-0000-4000-8000-000000000009",
       "name": "stats",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [208, 496]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [208, 496],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Lista priorizada das necessidades do plano (código, descrição, grupo, necessidade líquida, estoque, cobertura, dias até ruptura, risco, ação sugerida). Parâmetros (JSON): { plano_id?: uuid, risco?: 'alto'|'medio'|'baixo'|'dado_incompleto', grupo?: 'materia_prima'|'comprado'|'fabricado'|'fabricado_terceiro'|'embalagem', search?: string, sort?: 'ruptura'|'necessidade', limit?: int, offset?: int }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-dashboard",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Lista priorizada das necessidades do plano (cÃ³digo, descriÃ§Ã£o, grupo, necessidade lÃ­quida, estoque, cobertura, dias atÃ© ruptura, risco, aÃ§Ã£o sugerida). ParÃ¢metros (JSON): { plano_id?: uuid, risco?: 'alto'|'medio'|'baixo'|'dado_incompleto', grupo?: 'materia_prima'|'comprado'|'fabricado'|'fabricado_terceiro'|'embalagem', search?: string, sort?: 'ruptura'|'necessidade', limit?: int, offset?: int }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_dashboard_necessidades(\n  NULLIF($1,'')::uuid,\n  NULLIF($2,'')::text,\n  NULLIF($3,'')::text,\n  NULLIF($4,'')::text,\n  NULLIF($5,'')::text,\n  COALESCE(NULLIF($6,'')::int, 20),\n  COALESCE(NULLIF($7,'')::int, 0)\n);",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('plano_id', 'UUID do plano; vazio = Ãºltimo plano', 'string', ''), $fromAI('risco', \"Filtro de risco: alto|medio|baixo|dado_incompleto. Vazio = todos.\", 'string', ''), $fromAI('grupo', 'Filtro de grupo: materia_prima|comprado|fabricado|fabricado_terceiro|embalagem. Vazio = todos.', 'string', ''), $fromAI('search', 'Busca por cÃ³digo/descriÃ§Ã£o. Vazio = sem filtro.', 'string', ''), $fromAI('sort', 'OrdenaÃ§Ã£o: ruptura|necessidade. Vazio = padrÃ£o.', 'string', ''), $fromAI('limit', 'MÃ¡ximo de linhas (padrÃ£o 20).', 'string', '20'), $fromAI('offset', 'Deslocamento para paginaÃ§Ã£o (padrÃ£o 0).', 'string', '0') ] }}"
+        }
       },
       "id": "f771b1b5-0000-4000-8000-000000000010",
       "name": "list_necessidades",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [368, 496]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [368, 496],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Detalhe completo de um componente do plano (necessidade bruta/líquida, pedido em aberto, lead time, cobertura, dias até ruptura, chega a tempo, impacto em SKUs, justificativa). Parâmetros (JSON): { necessidade_id: uuid }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-necessidade",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Detalhe completo de um componente do plano (necessidade bruta/lÃ­quida, pedido em aberto, lead time, cobertura, dias atÃ© ruptura, chega a tempo, impacto em SKUs, justificativa). ParÃ¢metros (JSON): { necessidade_id: uuid }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT wl_get_necessidade(NULLIF($1,'')::uuid) AS data;",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('necessidade_id', 'UUID da necessidade (obrigatÃ³rio, vem de list_necessidades).', 'string') ] }}"
+        }
       },
       "id": "12d27d34-0000-4000-8000-000000000011",
       "name": "get_necessidade",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [528, 496]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [528, 496],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Situação de estoque por item (estoque atual, mínimo, ponto de pedido, consumo/dia, dias até ruptura, lead time, se cobre o lead time). Parâmetros (JSON): { grupo?: string, apenas_abaixo_minimo?: boolean, search?: string }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-estoque",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "SituaÃ§Ã£o de estoque por item (estoque atual, mÃ­nimo, ponto de pedido, consumo/dia, dias atÃ© ruptura, lead time, se cobre o lead time). ParÃ¢metros (JSON): { grupo?: string, apenas_abaixo_minimo?: boolean, search?: string }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_relatorio_estoque(\n  NULLIF($1,'')::text,\n  COALESCE(NULLIF($2,'')::boolean, false),\n  NULLIF($3,'')::text\n);",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('grupo', 'Filtro de grupo: materia_prima|comprado|fabricado|fabricado_terceiro|embalagem. Vazio = todos.', 'string', ''), $fromAI('apenas_abaixo_minimo', \"'true' para listar sÃ³ itens abaixo do estoque mÃ­nimo; vazio/'false' = todos.\", 'string', 'false'), $fromAI('search', 'Busca por cÃ³digo/descriÃ§Ã£o. Vazio = sem filtro.', 'string', '') ] }}"
+        }
       },
       "id": "fbe46fe2-0000-4000-8000-000000000012",
       "name": "relatorio_estoque",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [688, 496]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [688, 496],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "MRP do plano: necessidade líquida por grupo com a ação recomendada. Parâmetros (JSON): { plano_id?: uuid }. Sem plano_id usa o último plano concluído.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-mrp",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "MRP do plano: necessidade lÃ­quida por grupo com a aÃ§Ã£o recomendada. ParÃ¢metros (JSON): { plano_id?: uuid }. Sem plano_id usa o Ãºltimo plano concluÃ­do.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_relatorio_mrp(NULLIF($1,'')::uuid);",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('plano_id', 'UUID do plano; vazio = Ãºltimo plano concluÃ­do.', 'string', '') ] }}"
+        }
       },
       "id": "cc7c5dec-0000-4000-8000-000000000013",
       "name": "relatorio_mrp",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [208, 640]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [208, 640],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Lead time decomposto por SKU (fornecedor + terceiro + montagem) e atraso médio do fornecedor. Parâmetros (JSON): { search?: string, grupo?: string }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-leadtime",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Lead time decomposto por SKU (fornecedor + terceiro + montagem) e atraso mÃ©dio do fornecedor. ParÃ¢metros (JSON): { search?: string, grupo?: string }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_leadtime_skus(\n  NULLIF($1,'')::text,\n  NULLIF($2,'')::text\n);",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('search', 'Busca por cÃ³digo/descriÃ§Ã£o do SKU. Vazio = todos.', 'string', ''), $fromAI('grupo', 'Filtro de grupo. Vazio = todos.', 'string', '') ] }}"
+        }
       },
       "id": "80e353fe-0000-4000-8000-000000000014",
       "name": "leadtime_skus",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [368, 640]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [368, 640],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Lista os relatórios (planos) já processados, do mais recente ao mais antigo. Parâmetros (JSON): { limit?: int }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-planos",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Lista os relatÃ³rios (planos) jÃ¡ processados, do mais recente ao mais antigo. ParÃ¢metros (JSON): { limit?: int }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_list_planos(COALESCE(NULLIF($1,'')::int, 30));",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('limit', 'MÃ¡ximo de planos (padrÃ£o 30).', 'string', '30') ] }}"
+        }
       },
       "id": "7e7e838d-0000-4000-8000-000000000015",
       "name": "list_planos",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [528, 640]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [528, 640],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Taxa de concordância das decisões passadas por risco/ação. Consulte antes de recomendar para seguir o padrão do time. Sem parâmetros.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-learning",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Taxa de concordÃ¢ncia das decisÃµes passadas por risco/aÃ§Ã£o. Consulte antes de recomendar para seguir o padrÃ£o do time. Sem parÃ¢metros.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM wl_learning_signals();",
+        "options": {}
       },
       "id": "d55abd9e-0000-4000-8000-000000000016",
       "name": "learning_signals",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [688, 640]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [688, 640],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "toolDescription": "Registra a decisão de um item. Use SOMENTE quando o usuário pedir/confirmar. Parâmetros (JSON): { necessidade_id: uuid, acao: 'comprar'|'antecipar'|'abrir_pedido'|'acompanhar'|'ignorar', motivo?: string }.",
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/welmy-tool-decision",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('payload', '{}', 'json') }}"
+        "toolDescription": "Registra a decisÃ£o de um item. Use SOMENTE quando o usuÃ¡rio pedir/confirmar. ParÃ¢metros (JSON): { necessidade_id: uuid, acao: 'comprar'|'antecipar'|'abrir_pedido'|'acompanhar'|'ignorar', motivo?: string }.",
+        "descriptionType": "manual",
+        "operation": "executeQuery",
+        "query": "SELECT wl_record_decision(\n  NULLIF($1,'')::uuid,\n  NULLIF($2,''),\n  NULL,\n  NULLIF($3,''),\n  'ia'\n) AS data;",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('necessidade_id', 'UUID da necessidade (obrigatÃ³rio).', 'string'), $fromAI('acao', 'AÃ§Ã£o: comprar|antecipar|abrir_pedido|acompanhar|ignorar.', 'string'), $fromAI('motivo', 'Motivo da decisÃ£o (opcional).', 'string', '') ] }}"
+        }
       },
       "id": "47e29e40-0000-4000-8000-000000000017",
       "name": "registrar_decisao",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [528, 784]
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [528, 784],
+      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
     },
     {
       "parameters": {
-        "description": "Consulta a planilha mestre de SKUs e Part Numbers (Google Sheets). Aba 01: SKUs (código + descrição) com consumo diário médio. Aba 02: lead times dos itens. Abas 03-60: uma por SKU, com os Part Numbers detalhados.\n\nCOMO USAR (2 PASSOS):\n1. Se você NÃO sabe o nome exato da aba: envie 'nome_do_separador' VAZIO (\"\") para receber a lista de abas disponíveis.\n2. Se você JÁ sabe a aba: envie 'nome_do_separador' com o nome exato da aba e, opcionalmente, 'termo_de_pesquisa' (código SKU, part number ou descrição) para filtrar as linhas.",
+        "description": "Consulta a planilha mestre de SKUs e Part Numbers (Google Sheets). Aba 01: SKUs (cÃ³digo + descriÃ§Ã£o) com consumo diÃ¡rio mÃ©dio. Aba 02: lead times dos itens. Abas 03-60: uma por SKU, com os Part Numbers detalhados.\n\nCOMO USAR (2 PASSOS):\n1. Se vocÃª NÃƒO sabe o nome exato da aba: envie 'nome_do_separador' VAZIO (\"\") para receber a lista de abas disponÃ­veis.\n2. Se vocÃª JÃ sabe a aba: envie 'nome_do_separador' com o nome exato da aba e, opcionalmente, 'termo_de_pesquisa' (cÃ³digo SKU, part number ou descriÃ§Ã£o) para filtrar as linhas.",
         "workflowId": { "__rl": true, "value": "REPLACE_ME_PLANILHA_WF_ID", "mode": "list", "cachedResultName": "Welmy-Sub-Planilha-SKUs" },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "nome_do_separador": "={{ $fromAI('nome_do_separador', 'Nome exato da aba a abrir. Deixe vazio para listar as abas disponíveis.', 'string') }}",
-            "termo_de_pesquisa": "={{ $fromAI('termo_de_pesquisa', 'Termo para filtrar as linhas: código de SKU, part number ou descrição. Opcional.', 'string') }}"
+            "nome_do_separador": "={{ $fromAI('nome_do_separador', 'Nome exato da aba a abrir. Deixe vazio para listar as abas disponÃ­veis.', 'string') }}",
+            "termo_de_pesquisa": "={{ $fromAI('termo_de_pesquisa', 'Termo para filtrar as linhas: cÃ³digo de SKU, part number ou descriÃ§Ã£o. Opcional.', 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -286,8 +300,8 @@
     "Azure OpenAI Chat Model": { "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]] },
     "Postgres Chat Memory": { "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]] },
     "Supabase Vector Store": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "Supabase Vector Store (Sessão)": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "Azure OpenAI Embeddings": { "ai_embedding": [[{ "node": "Supabase Vector Store", "type": "ai_embedding", "index": 0 }, { "node": "Supabase Vector Store (Sessão)", "type": "ai_embedding", "index": 0 }]] },
+    "Supabase Vector Store (SessÃ£o)": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
+    "Azure OpenAI Embeddings": { "ai_embedding": [[{ "node": "Supabase Vector Store", "type": "ai_embedding", "index": 0 }, { "node": "Supabase Vector Store (SessÃ£o)", "type": "ai_embedding", "index": 0 }]] },
     "stats": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
     "list_necessidades": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
     "get_necessidade": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },

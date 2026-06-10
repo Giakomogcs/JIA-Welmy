@@ -27,11 +27,11 @@
           }
         }
       },
-      "id": "8790bfe1-f93c-4e8c-a3cc-1421070b1179",
+      "id": "5ece67cb-fe10-4864-a34c-6a61f93f1fcf",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
-      "position": [62272, 25648]
+      "position": [18400, 4416]
     },
     {
       "parameters": {
@@ -40,11 +40,11 @@
         "width": 4641,
         "color": 5
       },
-      "id": "e79cbc0a-32ea-426f-839e-b1352f595b1e",
+      "id": "c1939ac4-02e9-4c6e-8c51-6dea0ecd5740",
       "name": "Sticky Note1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [58208, 25008]
+      "position": [14336, 3776]
     },
     {
       "parameters": {
@@ -62,11 +62,11 @@
           }
         }
       },
-      "id": "7233cdca-15e0-44b1-b48d-4ced5759a17c",
+      "id": "99d004a5-d374-4d02-a936-f68bf2c1a7e5",
       "name": "Download File",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [60544, 25376],
+      "position": [16672, 4144],
       "retryOnFail": true,
       "maxTries": 2,
       "credentials": {
@@ -81,11 +81,11 @@
         "operation": "text",
         "options": {}
       },
-      "id": "c3450c98-b4b9-41f5-a76e-9cdb9031e9e9",
+      "id": "01dfb5b6-5528-4134-a75a-1f30352ad829",
       "name": "Extract Document Text",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [61248, 25712],
+      "position": [17376, 4480],
       "alwaysOutputData": true
     },
     {
@@ -93,11 +93,11 @@
         "operation": "pdf",
         "options": {}
       },
-      "id": "420866a9-325d-415c-b736-54997637cef9",
+      "id": "727ec15d-a67f-4cb8-861f-f432c6fca0a5",
       "name": "Extract PDF Text",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [61216, 25120],
+      "position": [17344, 3888],
       "alwaysOutputData": true
     },
     {
@@ -124,11 +124,11 @@
         },
         "options": {}
       },
-      "id": "816bc5b0-118e-451c-a42b-8575ac66d3f1",
+      "id": "cc9430ba-621e-4fa0-b82a-922d46467ca9",
       "name": "PDF tem texto?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [61408, 25120]
+      "position": [17536, 3888]
     },
     {
       "parameters": {
@@ -136,8 +136,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [61040, 25120],
-      "id": "4293830f-27f0-4cf5-9b20-8bfc95acddca",
+      "position": [17168, 3888],
+      "id": "b70e3780-4ac5-4839-b7de-cd6fb96bdee0",
       "name": "Prepare PDF Base64"
     },
     {
@@ -162,11 +162,11 @@
           "timeout": 300000
         }
       },
-      "id": "0402ebe2-bfc8-4631-9746-34b87375ce0e",
+      "id": "6f9cd178-f751-4463-91d2-21dac0d08bef",
       "name": "OCR via Azure (gpt-5.4-mini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [61600, 25504],
+      "position": [17728, 4272],
       "retryOnFail": true,
       "maxTries": 2,
       "credentials": {
@@ -196,30 +196,30 @@
         },
         "options": {}
       },
-      "id": "d95a9310-093e-4ec8-bb24-59bf21fd4c94",
+      "id": "b33b98b9-c32b-4e61-8c59-fde7a3eb6130",
       "name": "Set OCR Text",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [61776, 25504]
+      "position": [17904, 4272]
     },
     {
       "parameters": {
         "aggregate": "aggregateAllItemData",
         "options": {}
       },
-      "id": "3fe7ff7f-cd42-416a-90ee-498b639104f0",
+      "id": "cb5199e2-979f-4ae3-a384-e1b7dc3ef62d",
       "name": "Aggregate",
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
-      "position": [61248, 25296]
+      "position": [17376, 4064]
     },
     {
       "parameters": {},
-      "id": "dc5cd1aa-dbb6-4800-8369-400de8f261d3",
+      "id": "40a77a41-a821-4eea-bbb0-ddfa6994a61a",
       "name": "Character Text Splitter",
       "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
       "typeVersion": 1,
-      "position": [62240, 25792]
+      "position": [18368, 4560]
     },
     {
       "parameters": {
@@ -233,11 +233,11 @@
         },
         "options": {}
       },
-      "id": "3659c9c4-d82b-4789-be66-30a791425f9f",
+      "id": "4b553f51-7979-4e07-9572-6eeb8d3a8aeb",
       "name": "Summarize",
       "type": "n8n-nodes-base.summarize",
       "typeVersion": 1,
-      "position": [61600, 25296]
+      "position": [17728, 4064]
     },
     {
       "parameters": {
@@ -339,11 +339,11 @@
           "fallbackOutput": 3
         }
       },
-      "id": "f24d96cb-cf0a-4857-90c0-bc3629d98b82",
+      "id": "c6dc13e9-16a9-4717-bfe8-2ef356c3a405",
       "name": "Switch",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [60720, 25344]
+      "position": [16848, 4112]
     },
     {
       "parameters": {
@@ -358,11 +358,11 @@
           "queryName": "wl_match_documents"
         }
       },
-      "id": "dd6ca8d0-5fc7-414f-9cbf-b6c793f60791",
+      "id": "c6fb9017-e646-451a-9f6c-a91322876619",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
-      "position": [62256, 25440],
+      "position": [18384, 4208],
       "credentials": {
         "supabaseApi": {
           "id": "i5Q8tj8Pyc9XjSGd",
@@ -375,11 +375,11 @@
         "operation": "xlsx",
         "options": {}
       },
-      "id": "c313377f-4b6a-412f-8f8f-466ec05f8cc9",
+      "id": "83161251-f096-4aa3-8313-41684d4ac2e8",
       "name": "Extract from Excel",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [61040, 25296]
+      "position": [17168, 4064]
     },
     {
       "parameters": {
@@ -403,8 +403,8 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [62016, 25168],
-      "id": "158b1d43-c86a-4889-b6b9-e39e05d4ac87",
+      "position": [18144, 3936],
+      "id": "0d695ee3-cfc8-4fa1-95fd-228e9829ed61",
       "name": "Set Schema"
     },
     {
@@ -413,8 +413,8 @@
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [61040, 25472],
-      "id": "6a541992-376b-4709-a926-07c9382c8d43",
+      "position": [17168, 4240],
+      "id": "9d587293-2017-4337-bdca-963ff5a6164c",
       "name": "Extract from CSV"
     },
     {
@@ -425,8 +425,8 @@
       },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [59168, 25328],
-      "id": "a1609b3d-8810-489b-bc24-72d2292adb51",
+      "position": [15296, 4096],
+      "id": "eaf75974-6b65-461c-be8f-2d68dcc86c2e",
       "name": "Loop Over Items"
     },
     {
@@ -445,8 +445,8 @@
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [60176, 25472],
-      "id": "e697614e-ec9b-4631-9275-6a1637aab199",
+      "position": [16304, 4240],
+      "id": "fd162206-4834-4e54-991b-6e362560b6e7",
       "name": "Delete Old Data Rows",
       "alwaysOutputData": true,
       "credentials": {
@@ -513,8 +513,8 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [61248, 25472],
-      "id": "3d101356-32b5-4d74-a713-a2519cef85f2",
+      "position": [17376, 4240],
+      "id": "a75fdcff-d1b4-4a8d-b6cb-8818620d114d",
       "name": "Insert Table Rows",
       "credentials": {
         "postgres": {
@@ -602,8 +602,8 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [62240, 25168],
-      "id": "c982309e-a1f1-4fbd-b3bd-493c29efcf3e",
+      "position": [18368, 3936],
+      "id": "8c9304fb-dcd1-42ba-9d23-25aba1dd3208",
       "name": "Update Schema for Document Metadata",
       "credentials": {
         "postgres": {
@@ -620,9 +620,9 @@
         "color": 6
       },
       "type": "n8n-nodes-base.stickyNote",
-      "position": [55472, 25008],
+      "position": [11600, 3776],
       "typeVersion": 1,
-      "id": "f1d681f6-fcca-480e-8d41-f5693959ac25",
+      "id": "741b40aa-f8d3-4d66-8e00-575f401bdf7e",
       "name": "Sticky Note9"
     },
     {
@@ -632,7 +632,7 @@
         "filter": {
           "folderId": {
             "__rl": true,
-            "value": "={{ $json.drive_folder_id }}",
+            "value": "139W-HfLxR7y3XzFHv8VULfy8tnTZ2FcO",
             "mode": "id"
           }
         },
@@ -642,8 +642,8 @@
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [58704, 25120],
-      "id": "4f9d5f86-5f6b-43f6-a4ad-48b417df59c7",
+      "position": [14688, 3888],
+      "id": "c7b963da-2be8-4ba5-b6b4-08c2ec181d5f",
       "name": "Search files and folders",
       "retryOnFail": true,
       "maxTries": 2,
@@ -662,8 +662,8 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [59984, 25216],
-      "id": "7485bc7d-4947-4111-98c5-e668c76cf4f1",
+      "position": [16112, 3984],
+      "id": "ca69387f-9522-4568-b2a8-7b6bdf91bfaa",
       "name": "Delete Old Doc Rows1",
       "credentials": {
         "postgres": {
@@ -690,8 +690,8 @@
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [58704, 25536],
-      "id": "bf799efb-2151-49a1-8289-4202ee6f0274",
+      "position": [14832, 4304],
+      "id": "d23cfdd9-3ea4-4847-8bfe-b9607318be80",
       "name": "Upload file",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -711,8 +711,8 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [58400, 25632],
-      "id": "7a44f5f6-2efa-4459-95d1-db4684d5bbe2",
+      "position": [14528, 4400],
+      "id": "2e906cf6-cd14-4908-aae2-0759b2d5dec5",
       "name": "InsertFile-drive",
       "webhookId": "f9870744-c0e5-422a-9346-036341f2765a"
     },
@@ -723,11 +723,11 @@
         "width": 863,
         "color": 3
       },
-      "id": "8ad479db-d9c9-460d-998a-bcf36fc2c5ae",
+      "id": "0c78a300-c65f-4dd2-b7fc-44fcbe4dcdbb",
       "name": "Sticky Note Setup",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [57328, 25024]
+      "position": [13456, 3792]
     },
     {
       "parameters": {
@@ -735,11 +735,11 @@
         "query": "-- Welmy — setup SEGURO. As migrations 002-004 sao a fonte da verdade e rodam como owner.\n-- Este no NUNCA faz ALTER em tabela existente (evita 'must be owner'); so cria se faltar.\nDO $$\nBEGIN\n  IF to_regclass('public.wl_document_metadata') IS NULL THEN\n    CREATE TABLE wl_document_metadata (\n      file_id TEXT PRIMARY KEY, title TEXT, code TEXT, url TEXT, source TEXT,\n      mime_type TEXT, schema JSONB, session_id TEXT,\n      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n    );\n    CREATE INDEX IF NOT EXISTS idx_wl_meta_code    ON wl_document_metadata(code);\n    CREATE INDEX IF NOT EXISTS idx_wl_meta_session ON wl_document_metadata(session_id);\n  END IF;\n\n  IF to_regclass('public.wl_document_rows') IS NULL THEN\n    CREATE TABLE wl_document_rows (\n      id BIGSERIAL PRIMARY KEY,\n      dataset_id TEXT NOT NULL REFERENCES wl_document_metadata(file_id) ON DELETE CASCADE,\n      row_data JSONB NOT NULL,\n      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n    );\n    CREATE INDEX IF NOT EXISTS idx_wl_rows_dataset ON wl_document_rows(dataset_id);\n  END IF;\n\n  IF to_regclass('public.wl_chat_message') IS NULL THEN\n    CREATE TABLE wl_chat_message (\n      id BIGSERIAL PRIMARY KEY, session_id TEXT NOT NULL, message JSONB NOT NULL,\n      user_id UUID, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n    );\n    CREATE INDEX IF NOT EXISTS idx_wl_chat_session ON wl_chat_message(session_id);\n  END IF;\nEXCEPTION WHEN OTHERS THEN NULL;\nEND $$;",
         "options": {}
       },
-      "id": "776b92aa-2b87-484c-8817-bf942421f3c7",
+      "id": "0cc07ace-780c-46b0-ba28-df587a58d737",
       "name": "Create Standard Tables",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [57728, 25248],
+      "position": [13856, 4016],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -753,11 +753,11 @@
         "query": "-- Welmy — garante a tabela de vetores SEM exigir ownership. A funcao wl_match_documents\n-- e definida na migration 003 (com ACL); NAO recriar aqui.\nDO $$\nBEGIN\n  IF to_regclass('public.wl_documents') IS NULL THEN\n    CREATE TABLE wl_documents (\n      id bigserial PRIMARY KEY, content text, metadata jsonb, embedding vector(1536)\n    );\n    CREATE INDEX IF NOT EXISTS idx_wl_docs_file_id      ON wl_documents ((metadata->>'file_id'));\n    CREATE INDEX IF NOT EXISTS idx_wl_docs_metadata_gin ON wl_documents USING GIN (metadata);\n  END IF;\nEXCEPTION WHEN OTHERS THEN NULL;\nEND $$;",
         "options": {}
       },
-      "id": "05440721-69ef-4640-a0d8-90497035a10b",
+      "id": "79b6fa0f-db77-47a8-8492-20b5ba4db3e3",
       "name": "Create Vector Table & Functions1",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [57920, 25248],
+      "position": [14048, 4016],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -771,11 +771,12 @@
         "query": "-- Reset dos documentos GLOBAIS (mantem anexos de sessao). Sem DDL que exija ownership.\n-- Apaga os vetores globais (sem session_id)\nDELETE FROM wl_documents \nWHERE metadata->>'session_id' IS NULL;\n\n-- Apaga metadados globais (CASCADE remove wl_document_rows)\nDELETE FROM wl_document_metadata \nWHERE session_id IS NULL;",
         "options": {}
       },
-      "id": "d0d747a9-21c1-4f53-8d6e-5d63780f77ba",
+      "id": "dacd4b10-f995-410b-a54d-32d516838da3",
       "name": "Delete DRIVE Data Only1",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [58240, 25120],
+      "position": [14368, 3888],
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -787,8 +788,8 @@
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [57504, 25440],
-      "id": "2fdfa274-1c2f-4232-b1c3-08529cd1de02",
+      "position": [13632, 4208],
+      "id": "95392a0c-ce28-4de3-8090-5dad98e32b69",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -835,11 +836,11 @@
         },
         "options": {}
       },
-      "id": "436c56aa-ff8d-4654-962b-e8096e96a118",
+      "id": "4177ae7e-7c78-433a-9263-ef2704906975",
       "name": "Set File ID - to Context",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [59424, 25344]
+      "position": [15552, 4112]
     },
     {
       "parameters": {
@@ -848,11 +849,11 @@
         "width": 1276,
         "color": 2
       },
-      "id": "10779463-2731-499a-b93b-6f653d75d244",
+      "id": "b7367277-883d-4f3f-bd3a-1db704d7af05",
       "name": "Sticky Note Session",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [56032, 25024]
+      "position": [12160, 3792]
     },
     {
       "parameters": {
@@ -865,11 +866,11 @@
           ]
         }
       },
-      "id": "824f1df0-eb18-407b-b565-f15459e711ee",
+      "id": "ec644699-6197-4717-bd1a-b2eaa13d7819",
       "name": "24h Trigger (Session)1",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
-      "position": [56096, 25536]
+      "position": [12224, 4304]
     },
     {
       "parameters": {
@@ -877,11 +878,11 @@
         "query": "SELECT file_id AS id \nFROM wl_document_metadata \nWHERE session_id IS NOT NULL ",
         "options": {}
       },
-      "id": "84b4cc2a-3977-47fd-aa4f-b00ccd825265",
+      "id": "e2c29e6e-88c9-49e2-8590-1bcb0c5404d7",
       "name": "Get Expired File IDs1",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [56368, 25408],
+      "position": [12496, 4176],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -894,11 +895,11 @@
       "parameters": {
         "options": {}
       },
-      "id": "4cf19ffe-625e-4037-8bd3-3dd7532e9b02",
+      "id": "e3245841-1823-4033-8756-b621b259360f",
       "name": "Loop Expired Files1",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [56784, 25424]
+      "position": [12912, 4192]
     },
     {
       "parameters": {
@@ -910,11 +911,11 @@
         },
         "options": {}
       },
-      "id": "9b7ed079-d83a-492e-b479-98489ddf365c",
+      "id": "378758c7-406e-496f-926e-21e6950c31e1",
       "name": "Delete from Google Drive1",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [57072, 25536],
+      "position": [13200, 4304],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "1yxLK6IGIPQiU21B",
@@ -929,11 +930,11 @@
         "query": "-- 1. Remove Histórico de Chat Antigo (Removido o '*')\nDELETE FROM wl_chat_message;\n\n-- 2. Remove Vetores Antigos\nDELETE FROM wl_documents \nWHERE metadata->>'session_id' IS NOT NULL;\n\n-- 3. Remove Arquivos/Metadados Antigos\nDELETE FROM wl_document_metadata \nWHERE session_id IS NOT NULL;",
         "options": {}
       },
-      "id": "85a4ab94-1f22-42eb-8b82-61fa64642a27",
+      "id": "d5339442-ac48-4974-8afa-414aa37bc9fe",
       "name": "Clean Database Records1",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [57072, 25328],
+      "position": [13200, 4096],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -949,11 +950,11 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "725a7dae-ccaf-4c7b-9a05-3eb8dae75e97",
+      "id": "8d950f09-d06f-4942-a251-0b4677a5768b",
       "name": "Webhook Setup",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [56096, 25264],
+      "position": [12224, 4032],
       "webhookId": "1c70aff4-7d8b-4d00-abd9-0ecda88405ee"
     },
     {
@@ -962,11 +963,11 @@
         "responseBody": "={ \"status\": \"success\", \"message\": \"Documento processado com sucesso! Memoria RAG atualizada.\", \"file_id\": \"{{ $('Set File ID - to Context').first().json.file_id }}\" }",
         "options": {}
       },
-      "id": "7844988e-a9c0-4605-bc4e-2b53b0958c7b",
+      "id": "f518ae6f-133b-4ba9-a0b6-81c2c5d3e8cb",
       "name": "Confirmar Upload",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [59504, 25088]
+      "position": [15632, 3856]
     },
     {
       "parameters": {
@@ -974,8 +975,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [62528, 25440],
-      "id": "e94bbe34-7b8e-410c-9338-28e7fc07e144",
+      "position": [18656, 4208],
+      "id": "86883298-7e33-4614-8ca6-2c1e6ad150e3",
       "name": "Limpar RAM"
     },
     {
@@ -985,9 +986,9 @@
         "width": 304
       },
       "type": "n8n-nodes-base.stickyNote",
-      "position": [57456, 25808],
+      "position": [13584, 4576],
       "typeVersion": 1,
-      "id": "f037924a-d8ee-4978-9a72-fe5732997f54",
+      "id": "efab1856-1fee-4354-8152-02e2af45867b",
       "name": "Sticky Note4"
     },
     {
@@ -997,9 +998,9 @@
         "width": 320
       },
       "type": "n8n-nodes-base.stickyNote",
-      "position": [57792, 25824],
+      "position": [13920, 4592],
       "typeVersion": 1,
-      "id": "f04dd978-13dc-42f2-be48-a0e87231c494",
+      "id": "81599882-59a7-4475-b03f-1d19099e4bd2",
       "name": "Sticky Note6"
     },
     {
@@ -1029,8 +1030,8 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [59824, 25440],
-      "id": "cb764e08-04fb-40b6-a491-ec9971b77520",
+      "position": [15952, 4208],
+      "id": "b59e9835-8581-43e9-bf88-5b2732f46b8a",
       "name": "If"
     },
     {
@@ -1039,11 +1040,11 @@
         "query": "SELECT session_id FROM wl_document_metadata WHERE file_id = '{{ $('Set File ID - to Context').item.json.file_id }}'",
         "options": {}
       },
-      "id": "e7e9cd3b-0b1b-46fb-9a39-f31de47908a8",
+      "id": "11a9c421-62a7-40a7-bfef-3a87a377691e",
       "name": "Check Session Integrity",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [59616, 25344],
+      "position": [15744, 4112],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -1058,8 +1059,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [62000, 25376],
-      "id": "c2741da2-d8b3-401b-84eb-3a461e574ed5",
+      "position": [18128, 4144],
+      "id": "a7bd1de2-5e75-4827-a34f-82c00efbfdb1",
       "name": "Limpeza Excel"
     },
     {
@@ -1068,8 +1069,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [62000, 25520],
-      "id": "4d8167d2-7720-4456-9805-1c6ab3660f38",
+      "position": [18128, 4288],
+      "id": "6633a8d4-3483-48be-996f-ac051a6fef8c",
       "name": "Limpeza de Docs"
     },
     {
@@ -1078,8 +1079,8 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [62672, 25440],
-      "id": "2701333a-4132-46a3-af8e-bf00ada74b85",
+      "position": [18800, 4208],
+      "id": "c6ff2b7a-3949-4087-b5b6-3ecbeecfd243",
       "name": "Wait",
       "webhookId": "79b70584-7a14-4c4d-9ce3-6ff01b47128f"
     },
@@ -1089,8 +1090,8 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [57424, 25248],
-      "id": "fb979311-5173-49e2-ad00-9ae49b025d31",
+      "position": [13552, 4016],
+      "id": "43bb6a87-ec23-4282-bee7-2ac0af07fb3d",
       "name": "Wait1",
       "webhookId": "f18070ac-659f-41e0-9fac-920d996cefad"
     },
@@ -1121,8 +1122,8 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [56560, 25248],
-      "id": "b4f25a3a-b274-4d6f-802f-170aaf30bb0a",
+      "position": [12688, 4016],
+      "id": "60ff9491-eb61-4e52-9116-1760e5e7e00a",
       "name": "If1"
     },
     {
@@ -1226,8 +1227,8 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [60352, 25232],
-      "id": "f206ea7b-fedf-4c02-bbf7-1768d1ae984a",
+      "position": [16480, 4000],
+      "id": "274f8d4c-6a54-4514-bd38-6f716074c319",
       "name": "Insert Document Metadata1",
       "executeOnce": false,
       "credentials": {
@@ -1244,8 +1245,8 @@
       },
       "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
       "typeVersion": 1,
-      "position": [62112, 25680],
-      "id": "54f16b83-15a0-4d57-8899-6876116c0c42",
+      "position": [18240, 4448],
+      "id": "4cf61ee0-9a72-4b72-b969-29ed548db51f",
       "name": "Embeddings Azure OpenAI",
       "credentials": {
         "azureOpenAiApi": {
@@ -1256,44 +1257,23 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "wlgf-0001-0001-0001-000000000001",
-              "name": "drive_folder_id",
-              "value": "139W-HfLxR7y3XzFHv8VULfy8tnTZ2FcO",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [58416, 25120],
-      "id": "fa37111c-076f-4a56-b5b1-20fbee52a892",
-      "name": "Get Categories with Folders",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
         "jsCode": "// Fluxo de RESET (reindex de toda a pasta global): apenas marca session_id null.\nreturn $input.all().map(i => ({\n  json: {\n    ...i.json,\n    session_id: null\n  }\n}));"
       },
-      "id": "b1d09dbf-9434-4711-83bb-c93f70ece545",
+      "id": "a947d839-e3c0-46aa-87c4-da8bdad9dc6a",
       "name": "Attach Cat to Drive Files",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [58880, 25120]
+      "position": [15008, 3888]
     },
     {
       "parameters": {
         "jsCode": "// Anexa session_id (do body OU query string) ao arquivo recem-enviado.\n// Fluxo de UPLOAD via CHAT (welmy-rag-upload?sessionId=...).\nconst wh = $('InsertFile-drive').first().json;\nconst body = wh.body || {};\nconst query = wh.query || {};\nreturn $input.all().map(i => ({\n  json: {\n    ...i.json,\n    session_id: body.sessionId || body.session_id || query.sessionId || query.session_id || null\n  }\n}));"
       },
-      "id": "e80a6375-0657-49b1-bc90-420c8b6db53d",
+      "id": "197050d2-59d5-4203-b5b5-b1625cfa0195",
       "name": "Attach Body to Upload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [58848, 25536]
+      "position": [14976, 4304]
     },
     {
       "parameters": {
@@ -1302,11 +1282,11 @@
         "width": 760,
         "color": 4
       },
-      "id": "a6d28d01-8f16-4fe5-8fda-4243eeb371d2",
+      "id": "37dbb38b-001f-441e-a573-cb436db6d6db",
       "name": "Sticky Note - Upload Unitario",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [55472, 26528]
+      "position": [11600, 5296]
     },
     {
       "parameters": {
@@ -1318,42 +1298,42 @@
           "binaryPropertyName": "data"
         }
       },
-      "id": "183fc23e-7b46-465d-9375-52ed4cea0e06",
+      "id": "4570f783-a2eb-4978-af32-53eccd16f52f",
       "name": "Webhook RAG Upload",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [55616, 26688],
+      "position": [11744, 5456],
       "webhookId": "zfx-rag-upload"
     },
     {
       "parameters": {
         "jsCode": "// Extrai filename e mime do binario 'data'. Upload GLOBAL (sem categoria).\nconst item = $input.first();\nconst body = item.json.body || item.json || {};\n\nconst bin = item.binary && (item.binary.data || item.binary[Object.keys(item.binary)[0]]);\nif (!bin) throw new Error('Arquivo \"data\" nao enviado no multipart.');\n\nconst filename = bin.fileName || body.filename || '';\nif (!filename) throw new Error('Nao foi possivel determinar o nome do arquivo.');\n\nitem.json = {\n  ...item.json,\n  filename,\n  mime_type: bin.mimeType || 'application/octet-stream',\n  user_id: body.userId || body.user_id || null\n};\nreturn item;"
       },
-      "id": "c4dcc5e2-e99e-4ccb-bdcc-4c35f147baf4",
+      "id": "c98763e1-1ba8-48fd-9162-823a1be53d02",
       "name": "Parse Upload Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [55824, 26688]
+      "position": [11952, 5456]
     },
     {
       "parameters": {
         "jsCode": "// Sem categorias no Welmy — apenas repassa o item adiante.\nreturn $input.all();"
       },
-      "id": "a4c27f15-ab32-4bd5-a68d-a96bd8cbadbe",
+      "id": "82e3f9f4-c516-4366-acc9-8b5cc69bc6fb",
       "name": "Lookup Upload Category",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [56032, 26688]
+      "position": [12160, 5456]
     },
     {
       "parameters": {
         "jsCode": "// Upload GLOBAL: usa a pasta unica do Drive do Welmy (sem categoria).\nconst webhook = $('Parse Upload Payload').first().json;\nconst GLOBAL_FOLDER = '139W-HfLxR7y3XzFHv8VULfy8tnTZ2FcO';\nreturn [{\n  json: {\n    filename: webhook.filename,\n    mime_type: webhook.mime_type,\n    drive_folder_id: GLOBAL_FOLDER,\n    user_id: webhook.user_id || null,\n    session_id: null\n  },\n  binary: $('Webhook RAG Upload').first().binary\n}];"
       },
-      "id": "6fa94ab2-3bff-4f5f-9841-a16ac9381eda",
+      "id": "414aacc4-b789-49da-96c1-b35d62e4bd0a",
       "name": "Build Upload Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [56240, 26688]
+      "position": [12368, 5456]
     },
     {
       "parameters": {
@@ -1371,11 +1351,11 @@
           "fields": ["id", "name", "mimeType", "webViewLink", "trashed"]
         }
       },
-      "id": "be634a17-0f07-4cb2-b74a-af54cefae133",
+      "id": "967868a3-64b1-4d6a-a403-05e4be7d7fda",
       "name": "Search Drive by Filename",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [56448, 26688],
+      "position": [12576, 5456],
       "alwaysOutputData": true,
       "retryOnFail": true,
       "maxTries": 2,
@@ -1390,11 +1370,11 @@
       "parameters": {
         "jsCode": "const ctx = $('Build Upload Context').first().json;\nconst hits = $input.all().map(i => i.json).filter(f => f && f.id && f.name && !f.trashed);\nconst exact = hits.find(f => f.name === ctx.filename);\nconst binary = $('Build Upload Context').first().binary;\nreturn [{\n  json: {\n    ...ctx,\n    existing_file_id: exact ? exact.id : null,\n    existing_web_view_link: exact ? (exact.webViewLink || null) : null,\n    action: exact ? 'replace' : 'create'\n  },\n  binary\n}];"
       },
-      "id": "e391191c-11eb-4a0c-9856-d66808de8ec7",
+      "id": "2d6678dd-3706-4987-a9bb-a7fe57f7f748",
       "name": "Decide Replace or Create",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [56656, 26688]
+      "position": [12784, 5456]
     },
     {
       "parameters": {
@@ -1420,11 +1400,11 @@
         },
         "options": {}
       },
-      "id": "64320891-684f-43a7-8bd3-0d7a424ce302",
+      "id": "d6131cef-fd13-44ae-8974-633db39e499b",
       "name": "Replace?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [56864, 26688]
+      "position": [12992, 5456]
     },
     {
       "parameters": {
@@ -1437,11 +1417,11 @@
         "changeFileContent": true,
         "options": {}
       },
-      "id": "b568d518-6771-4605-a29c-c72dc8b2a02a",
+      "id": "6aa6dfa9-ff46-406f-b87f-e01a116fb00b",
       "name": "Drive: Update File",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [57072, 26592],
+      "position": [13200, 5360],
       "retryOnFail": true,
       "maxTries": 2,
       "credentials": {
@@ -1466,11 +1446,11 @@
         },
         "options": {}
       },
-      "id": "4afa6be0-68ed-497f-96e4-d9b2a98d0a03",
+      "id": "a3d8daf4-b0c5-4206-ab41-ad23372502f1",
       "name": "Drive: Upload File (no prefix)",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [57072, 26784],
+      "position": [13200, 5552],
       "retryOnFail": true,
       "maxTries": 2,
       "credentials": {
@@ -1484,11 +1464,11 @@
       "parameters": {
         "jsCode": "// Normaliza o resultado do Drive (update OU upload) para o shape esperado\n// pelo Loop Over Items / Set File ID - to Context.\nconst drive = $input.first().json || {};\nconst ctx = $('Decide Replace or Create').first().json;\nconst fileId = drive.id || ctx.existing_file_id;\nif (!fileId) throw new Error('Drive nao retornou file_id apos upload/update.');\nconst dot = ctx.filename.lastIndexOf('.');\nconst code = dot > 0 ? ctx.filename.substring(0, dot) : ctx.filename;\nreturn [{\n  json: {\n    id: fileId,\n    name: ctx.filename,\n    mimeType: drive.mimeType || ctx.mime_type,\n    webViewLink: drive.webViewLink || ctx.existing_web_view_link || null,\n    code,\n    session_id: null\n  }\n}];"
       },
-      "id": "84385299-4f64-4202-b665-e9d9ab84f3ae",
+      "id": "fdfb3cb5-9322-4cee-9a3e-24fa3903cf09",
       "name": "Set Upload Item Shape",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [57280, 26688]
+      "position": [13408, 5456]
     },
     {
       "parameters": {
@@ -1497,11 +1477,11 @@
         "width": 760,
         "color": 6
       },
-      "id": "5d34104e-28e5-4d3e-ac10-e117657daba3",
+      "id": "39be4388-d7bc-47ed-8b3c-758207be3407",
       "name": "Sticky Note - Reindex",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [55472, 27088]
+      "position": [11600, 5856]
     },
     {
       "parameters": {
@@ -1512,22 +1492,22 @@
           "allowedOrigins": "*"
         }
       },
-      "id": "49d85bdf-3363-4474-a3a6-cc0056155615",
+      "id": "8c62a1f2-28d8-4ed7-9564-eddef12ff0f8",
       "name": "Webhook RAG Reindex",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [55616, 27248],
+      "position": [11744, 6016],
       "webhookId": "zfx-rag-reindex"
     },
     {
       "parameters": {
         "jsCode": "// Normaliza body: aceita { file_id } | { file_ids: [...] } | { ids: [...] }.\nconst b = ($input.first().json.body) || $input.first().json || {};\nlet ids = [];\nif (Array.isArray(b.file_ids)) ids = b.file_ids;\nelse if (Array.isArray(b.ids)) ids = b.ids;\nelse if (b.file_id) ids = [b.file_id];\nelse if (b.id) ids = [b.id];\nids = ids.map(x => String(x || '').trim()).filter(Boolean);\nif (ids.length === 0) throw new Error('file_id ou file_ids obrigatório.');\nreturn [{ json: { ids, ids_csv: ids.map(s => s.replace(/[^a-zA-Z0-9_\\-\\.]/g, '')).join(',') } }];"
       },
-      "id": "24e56439-68bb-4d82-b4a7-1e6c78a31d69",
+      "id": "5ca510d1-b6bf-4293-9ea5-cf775dd00c2f",
       "name": "Normalize Reindex IDs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [55824, 27248]
+      "position": [11952, 6016]
     },
     {
       "parameters": {
@@ -1535,11 +1515,11 @@
         "query": "SELECT m.file_id AS id,\n       COALESCE(m.title, m.file_id) AS name,\n       COALESCE(m.mime_type, 'application/octet-stream') AS \"mimeType\",\n       m.url AS \"webViewLink\",\n       m.code AS code\nFROM wl_document_metadata m\nWHERE m.file_id = ANY(string_to_array('{{ $json.ids_csv }}', ','));",
         "options": {}
       },
-      "id": "4f3316cf-c61a-4714-a8cc-e0172108c168",
+      "id": "9564c858-3d25-4c80-adbe-be5fee15903d",
       "name": "Fetch Reindex Metadata",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [56032, 27248],
+      "position": [12160, 6016],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -1552,11 +1532,11 @@
       "parameters": {
         "jsCode": "// Garante session_id null e mantem o shape esperado pelo Loop Over Items.\nconst rows = $input.all();\nif (rows.length === 0) throw new Error('Nenhum documento encontrado para os file_ids fornecidos.');\nreturn rows.map(r => ({\n  json: {\n    id: r.json.id,\n    name: r.json.name,\n    mimeType: r.json.mimeType,\n    webViewLink: r.json.webViewLink,\n    code: r.json.code,\n    session_id: null\n  }\n}));"
       },
-      "id": "fdf80d63-76cd-4528-b9e6-8e2d39a60f3a",
+      "id": "5aa89e01-bf7b-4c31-8e9c-10679c08d10a",
       "name": "Set Reindex Item Shape",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [56240, 27248]
+      "position": [12368, 6016]
     },
     {
       "parameters": {
@@ -1564,11 +1544,11 @@
         "responseBody": "={{ { status: 'queued', reindex_count: $('Normalize Reindex IDs').first().json.ids.length, ids: $('Normalize Reindex IDs').first().json.ids } }}",
         "options": {}
       },
-      "id": "949b59a2-aecc-4be8-9375-08c4af7baab1",
+      "id": "63fe1c6b-eaa2-4dbf-ae6b-540df4dcb654",
       "name": "Respond Reindex Queued",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [56448, 27248]
+      "position": [12576, 6016]
     }
   ],
   "connections": {
@@ -1890,7 +1870,7 @@
       "main": [
         [
           {
-            "node": "Get Categories with Folders",
+            "node": "Search files and folders",
             "type": "main",
             "index": 0
           }
@@ -2111,17 +2091,6 @@
           {
             "node": "Insert into Supabase Vectorstore",
             "type": "ai_embedding",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Categories with Folders": {
-      "main": [
-        [
-          {
-            "node": "Search files and folders",
-            "type": "main",
             "index": 0
           }
         ]
