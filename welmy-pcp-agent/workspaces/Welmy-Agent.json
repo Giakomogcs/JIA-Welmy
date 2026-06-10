@@ -46,7 +46,9 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
       "position": [-64, 288],
-      "credentials": { "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" } }
+      "credentials": {
+        "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" }
+      }
     },
     {
       "parameters": {
@@ -60,7 +62,9 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [96, 288],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -76,7 +80,9 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1.1,
       "position": [784, 288],
-      "credentials": { "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" }
+      }
     },
     {
       "parameters": {
@@ -87,7 +93,14 @@
         "topK": 6,
         "options": {
           "queryName": "wl_match_documents",
-          "metadata": { "metadataValues": [ { "name": "session_id", "value": "={{ $('Prepare Input').item.json.sessionId }}" } ] }
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "session_id",
+                "value": "={{ $('Prepare Input').item.json.sessionId }}"
+              }
+            ]
+          }
         }
       },
       "id": "aa8cebf1-0000-4000-8000-000000000007",
@@ -95,7 +108,9 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1.1,
       "position": [1056, 288],
-      "credentials": { "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": { "id": "i5Q8tj8Pyc9XjSGd", "name": "Supabase account" }
+      }
     },
     {
       "parameters": { "model": "text-embedding-3-small", "options": {} },
@@ -104,7 +119,9 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
       "typeVersion": 1,
       "position": [960, 496],
-      "credentials": { "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" } }
+      "credentials": {
+        "azureOpenAiApi": { "id": "xby4FSbCaCnssJxl", "name": "Azure OpenAI" }
+      }
     },
     {
       "parameters": {
@@ -119,7 +136,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [208, 496],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -136,7 +155,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [368, 496],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -153,7 +174,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [528, 496],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -170,7 +193,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [688, 496],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -187,7 +212,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [208, 640],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -204,7 +231,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [368, 640],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -221,7 +250,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [528, 640],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -236,7 +267,9 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [688, 640],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
@@ -253,12 +286,19 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [528, 784],
-      "credentials": { "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" } }
+      "credentials": {
+        "postgres": { "id": "jFjeYH6Nt3aRNkoM", "name": "Supabase_database" }
+      }
     },
     {
       "parameters": {
         "description": "Consulta a planilha mestre de SKUs e Part Numbers (Google Sheets). Aba 01: SKUs (cÃ³digo + descriÃ§Ã£o) com consumo diÃ¡rio mÃ©dio. Aba 02: lead times dos itens. Abas 03-60: uma por SKU, com os Part Numbers detalhados.\n\nCOMO USAR (2 PASSOS):\n1. Se vocÃª NÃƒO sabe o nome exato da aba: envie 'nome_do_separador' VAZIO (\"\") para receber a lista de abas disponÃ­veis.\n2. Se vocÃª JÃ sabe a aba: envie 'nome_do_separador' com o nome exato da aba e, opcionalmente, 'termo_de_pesquisa' (cÃ³digo SKU, part number ou descriÃ§Ã£o) para filtrar as linhas.",
-        "workflowId": { "__rl": true, "value": "REPLACE_ME_PLANILHA_WF_ID", "mode": "list", "cachedResultName": "Welmy-Sub-Planilha-SKUs" },
+        "workflowId": {
+          "__rl": true,
+          "value": "REPLACE_ME_PLANILHA_WF_ID",
+          "mode": "list",
+          "cachedResultName": "Welmy-Sub-Planilha-SKUs"
+        },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -267,8 +307,24 @@
           },
           "matchingColumns": [],
           "schema": [
-            { "id": "nome_do_separador", "displayName": "nome_do_separador", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
-            { "id": "termo_de_pesquisa", "displayName": "termo_de_pesquisa", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" }
+            {
+              "id": "nome_do_separador",
+              "displayName": "nome_do_separador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "termo_de_pesquisa",
+              "displayName": "termo_de_pesquisa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
           ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": true
@@ -294,24 +350,75 @@
     }
   ],
   "connections": {
-    "Webhook: AgentRag": { "main": [[{ "node": "Prepare Input", "type": "main", "index": 0 }]] },
-    "Prepare Input": { "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]] },
-    "AI Agent": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] },
-    "Azure OpenAI Chat Model": { "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]] },
-    "Postgres Chat Memory": { "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]] },
-    "Supabase Vector Store": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "Supabase Vector Store (SessÃ£o)": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "Azure OpenAI Embeddings": { "ai_embedding": [[{ "node": "Supabase Vector Store", "type": "ai_embedding", "index": 0 }, { "node": "Supabase Vector Store (SessÃ£o)", "type": "ai_embedding", "index": 0 }]] },
-    "stats": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "list_necessidades": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "get_necessidade": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "relatorio_estoque": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "relatorio_mrp": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "leadtime_skus": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "list_planos": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "learning_signals": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "registrar_decisao": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] },
-    "consultar_planilha_skus": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] }
+    "Webhook: AgentRag": {
+      "main": [[{ "node": "Prepare Input", "type": "main", "index": 0 }]]
+    },
+    "Prepare Input": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "AI Agent": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "Supabase Vector Store (SessÃ£o)": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "Azure OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store (SessÃ£o)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stats": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "list_necessidades": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "get_necessidade": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "relatorio_estoque": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "relatorio_mrp": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "leadtime_skus": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "list_planos": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "learning_signals": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "registrar_decisao": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "consultar_planilha_skus": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    }
   },
   "pinData": {},
   "active": true,
